@@ -13,35 +13,37 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.levelup_gamer.ui.theme.LevelUPGamerTheme
 
+import android.os.Handler
+import android.os.Looper
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.example.levelup_gamer.ui.screens.login.LoginScreen
+import com.example.levelup_gamer.ui.screens.splash.SplashScreen
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            LevelUPGamerTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
+           Myapp()
         }
     }
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    LevelUPGamerTheme {
-        Greeting("Android")
+fun Myapp(){
+    var showLogin by rememberSaveable(mutableStateOf(false)) {
+    val handler = remember { Handler(Looper.get)}
+        LauncherEffect(Unit)
     }
 }
+
+
+
+
+
+@Composable
+fun LauncherEffect(x0: Unit) {
+    TODO("Not yet implemented")
+}
+
