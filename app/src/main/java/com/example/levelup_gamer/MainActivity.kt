@@ -24,8 +24,10 @@ import android.window.SplashScreen
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
-import com.example.levelup_gamer.ui.screens.login.LoginScreen
+import com.example.levelup_gamer.navegation.AppNavegacion
+import com.example.levelup_gamer.ui.theme.
 import com.example.levelup_gamer.ui.screens.splash.SplashScreen
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,7 +52,7 @@ fun MyApp() {
             if (!showLogin) {
                 SplashScreen()
             } else {
-                LoginScreen()
+                AppNavegacion()
 
             }
         }

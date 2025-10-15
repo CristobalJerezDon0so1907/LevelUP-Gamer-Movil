@@ -70,4 +70,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+
+    //Navigation Compose
+    implementation("androidx.navigation:navigation-compose:2.7.6")
 }
