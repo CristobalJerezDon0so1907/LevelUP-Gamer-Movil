@@ -87,7 +87,7 @@ fun CatalogoScreen(
 
 @Composable
 fun ProductoItem(
-    producto: com.example.nombrecaso.model.Producto,
+    producto: com.example.levelup_gamer.model.Producto,
     onAgregar: () -> Unit,
     onEliminar: () -> Unit,
     cantidadEnCarrito: Int

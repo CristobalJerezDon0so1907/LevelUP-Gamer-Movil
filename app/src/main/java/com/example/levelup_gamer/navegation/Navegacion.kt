@@ -1,19 +1,26 @@
 package com.example.levelup_gamer.navegation
+
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.levelup_gamer.ui.screens.login.LoginScreen
-import com.example.levelup_gamer.ui.screens.perfil.PerfilAdminScreen
 import com.example.levelup_gamer.ui.screens.registro.RegistroScreen
+import com.example.levelup_gamer.ui.screens.perfil.PerfilAdminScreen
 import com.example.levelup_gamer.ui.screens.perfil.PerfilClienteScreen
-import com.google.firebase.auth.FirebaseAuth
+
+import com.example.levelup_gamer.ui.screens.carrito.CarritoScreen
+import com.example.levelup_gamer.ui.screens.pago.PagoConfirmacionScreen
+import com.example.levelup_gamer.viewmodel.CarritoViewModel
+
 
 @Composable
 fun AppNavegacion() {
     val navController = rememberNavController()
+    val carritoViewModel: CarritoViewModel = viewModel()
 
     NavHost(
         navController = navController,
@@ -71,6 +78,39 @@ fun AppNavegacion() {
                     // Volver al login limpiando el back stack
                     navController.navigate("login") {
                         popUpTo(0) { inclusive = true }
+                    }
+                }, //Agregar navegacion al carrito
+                onVerCarrito = {
+                    navController.navigate("carrito")
+                },
+                viewModel = carritoViewModel
+            )
+        }
+
+        //Agregar pantalla de carrito
+        composable("carrito") {
+            CarritoScreen(
+                onVolverAlCatalogo = {
+                    navController.popBackStack()
+                },
+                onConfirmarPago = {
+                    navController.navigate("pago") {
+                        popUpTo("perfil_cliente") { inclusive = false }
+                    }
+                },
+                viewModel = carritoViewModel
+            )
+        }
+
+        // Agregar pantalla de confirmación de pago
+        composable("pago") { backStackEntry ->
+            // Obtener el nombre del usuario de alguna manera
+            // Por ahora usamos un valor por defecto
+            PagoConfirmacionScreen(
+                nombreUsuario = "Cliente",
+                onVolverAlPerfil = {
+                    navController.navigate("perfil_cliente/Cliente") {
+                        popUpTo("login") { inclusive = false}
                     }
                 }
             )

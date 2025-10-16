@@ -1,7 +1,9 @@
 package com.example.levelup_gamer.ui.screens.carrito
 
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -12,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
-import com.example.levelup_gamer.model.ItemCarrito
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.levelup_gamer.viewmodel.CarritoViewModel
 
 @Composable
@@ -172,7 +174,7 @@ fun CarritoScreen(
 
 @Composable
 fun ItemCarrito(
-    item: ItemCarrito,
+    item: com.example.levelup_gamer.model.ItemCarrito,
     onEliminar: () -> Unit
 ) {
     Card(

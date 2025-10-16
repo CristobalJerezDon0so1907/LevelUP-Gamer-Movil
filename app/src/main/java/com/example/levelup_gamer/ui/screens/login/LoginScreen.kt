@@ -23,7 +23,7 @@ import com.example.levelup_gamer.viewmodel.LoginViewModel
 @Composable
 fun LoginScreen(
     onRegisterClick: () -> Unit = {},
-    onLoginSuccess: (user: com.example.nombrecaso.model.User) -> Unit = {}
+    onLoginSuccess: (user: com.example.levelup_gamer.model.Usuario) -> Unit = {}
 ) {
     //Variable para obtener en tiempo de ejecución el estado del ciclo de vida de app
     val context = LocalContext.current
@@ -39,7 +39,7 @@ fun LoginScreen(
     val carga by viewModel.carga.collectAsState()
 
     //Establecer conexión con Auth
-    val repositorio = AuthRepository()
+    val repositorio = AutRepository()
 
     //Observar cuando el usuario este logueado
     LaunchedEffect(user) {

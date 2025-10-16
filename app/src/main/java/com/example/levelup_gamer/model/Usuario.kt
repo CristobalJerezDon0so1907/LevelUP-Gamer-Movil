@@ -1,7 +1,5 @@
 package com.example.levelup_gamer.model
 
-
-
 data class  Usuario (
     val correo: String = "",
     val clave: String = "",
