@@ -6,6 +6,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.levelup_gamer.ui.screens.login.LoginScreen
+import com.example.levelup_gamer.ui.screens.perfil.PerfilAdminScreen
 import com.example.levelup_gamer.ui.screens.registro.RegistroScreen
 import com.example.levelup_gamer.ui.screens.perfil.PerfilClienteScreen
 import com.google.firebase.auth.FirebaseAuth

@@ -1,7 +1,5 @@
 package com.example.levelup_gamer.ui.screens.registro
 
-
-
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState

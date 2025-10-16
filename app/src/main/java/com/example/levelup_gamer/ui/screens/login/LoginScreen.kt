@@ -21,8 +21,10 @@ import com.example.levelup_gamer.repository.AutRepository
 import com.example.levelup_gamer.viewmodel.LoginViewModel
 
 @Composable
-fun LoginScreen(onRegisterClick: () -> Unit = {}, //Agregar al nuevo LoginScreen
-                onLoginSuccess: (user: com.example.levelup_gamer.model.Usuario ) -> Unit = {}) {
+fun LoginScreen(
+    onRegisterClick: () -> Unit = {},
+    onLoginSuccess: (user: com.example.nombrecaso.model.User) -> Unit = {}
+) {
     //Variable para obtener en tiempo de ejecución el estado del ciclo de vida de app
     val context = LocalContext.current
 
@@ -36,7 +38,8 @@ fun LoginScreen(onRegisterClick: () -> Unit = {}, //Agregar al nuevo LoginScreen
     val user by viewModel.user.collectAsState()
     val carga by viewModel.carga.collectAsState()
 
-    val repositorio = AutRepository()//Agregar al nuevo LoginScreen
+    //Establecer conexión con Auth
+    val repositorio = AuthRepository()
 
     //Observar cuando el usuario este logueado
     LaunchedEffect(user) {
@@ -104,22 +107,22 @@ fun LoginScreen(onRegisterClick: () -> Unit = {}, //Agregar al nuevo LoginScreen
                 viewModel.login(correo, pass)
             },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF81154C),
-                contentColor = Color(0xFFC7F9CC)
-            ),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF81154C), contentColor = Color(0xFFC7F9CC)),
             enabled = !carga
-        ){
+        )
+        {
             if(carga) {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.Gray)
-            } else {
-                Text("Entrar")
             }
+            Text("Entrar")
         }
-        //Botón para agregar registro
-        Spacer(Modifier.height(16.dp))
+
+        //Boton para registro
+        Spacer(Modifier.height(30.dp))
+
         TextButton(onClick = onRegisterClick) {
-            Text("¿No tienes cuenta? Registrate aquí", color = Color(0xFF81154C))
+            Text("¿No tienes cuenta? Registrate aquí",
+                color = Color(0xFF81154C))
         }
     }
 }
