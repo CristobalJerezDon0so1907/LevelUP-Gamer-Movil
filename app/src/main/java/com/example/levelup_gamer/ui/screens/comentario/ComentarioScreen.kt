@@ -1,17 +1,32 @@
 package com.example.levelup_gamer.ui.screens.comentario
 
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel // 👈 IMPORTAR ESTO
 import androidx.compose.ui.focus.FocusRequester
-import com.example.levelup_gamer.model.Comentario
-import com.example.levelup_gamer.viewmodel.ComentarioViewModel
 
 @Composable
-fun ComentarioScreen(productId: String, viewModel: ComentarioViewModel = ComentarioViewModel()) {
-    val comments by viewModel.comments.collectAsState()
-    val commentText = remember { mutableStateOf("") }
-    val focusRequester = remember { FocusRequesterester() }
+fun ComentarioScreen(
+    productId: String,
+    viewModel: com.example.levelup_gamer.viewmodel.ComentarioViewModel = androidx.lifecycle.viewmodel.compose.viewModel() // 👈 VALOR POR DEFECTO
+) {
+    val comments by viewModel.comments.collectAsState() // 👈 ESTO DEBERÍA FUNCIONAR AHORA
+
+    var commentText by remember { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
 
     // Cargar comentarios al iniciar la pantalla
     LaunchedEffect(productId) {
@@ -29,17 +44,17 @@ fun ComentarioScreen(productId: String, viewModel: ComentarioViewModel = Comenta
         }
 
         CommentInput(
-            commentText = commentText.value,
-            onCommentTextChanged = { commentText.value = it },
+            commentText = commentText,
+            onCommentTextChanged = { commentText = it },
             onAddComment = {
-                if (commentText.value.isNotBlank()) {
+                if (commentText.isNotBlank()) {
                     viewModel.addComment(
                         productId,
                         "userIdExample", // Aquí obtendrías el ID del usuario actual
                         "Usuario Anónimo", // Nombre de usuario
-                        commentText.value
+                        commentText
                     )
-                    commentText.value = ""
+                    commentText = ""
                 }
             }
         )
@@ -62,7 +77,8 @@ fun CommentInput(
             value = commentText,
             onValueChange = onCommentTextChanged,
             modifier = Modifier.weight(1f),
-            label = { Text("Escribe un comentario...") }
+            label = { Text("Escribe un comentario...") },
+            placeholder = { Text("Escribe tu comentario...") } // 👈 AGREGADO
         )
         IconButton(
             onClick = onAddComment,
@@ -77,12 +93,12 @@ fun CommentInput(
 }
 
 @Composable
-fun CommentItem(comment: Comment) {
+fun CommentItem(comment: com.example.levelup_gamer.model.Comentario) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
-            .background(Color.LightGray, RoundedCornerShape(8.dp))
+            .background(Color.LightGray.copy(alpha = 0.2f), RoundedCornerShape(8.dp)) // 👈 MEJORADO
             .padding(16.dp)
     ) {
         Text(

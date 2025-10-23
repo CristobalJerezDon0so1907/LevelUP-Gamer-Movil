@@ -9,10 +9,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.levelup_gamer.ui.components.forms.TextFieldWithError
+import com.example.levelup_gamer.ui.components.forms.PasswordTextFieldWithError
 
 @Composable
 fun RegistroScreen(
@@ -29,6 +30,41 @@ fun RegistroScreen(
     val cargando by viewModel.cargando.collectAsState()
     val registroExitoso by viewModel.registroExitoso.collectAsState()
     val errorMensaje by viewModel.errorMensaje.collectAsState()
+    val emailError by viewModel.emailError.collectAsState()
+    val passwordError by viewModel.passwordError.collectAsState()
+    val confirmPasswordError by viewModel.confirmPasswordError.collectAsState()
+    val nameError by viewModel.nameError.collectAsState()
+
+    // Validación en tiempo real para email
+    LaunchedEffect(correo) {
+        if (correo.isNotEmpty()) {
+            viewModel.validateEmail(correo)
+        }
+    }
+
+    // Validación en tiempo real para contraseña
+    LaunchedEffect(clave) {
+        if (clave.isNotEmpty()) {
+            viewModel.validatePassword(clave)
+            if (confirmarClave.isNotEmpty()) {
+                viewModel.validateConfirmPassword(clave, confirmarClave)
+            }
+        }
+    }
+
+    // Validación en tiempo real para confirmar contraseña
+    LaunchedEffect(confirmarClave) {
+        if (confirmarClave.isNotEmpty()) {
+            viewModel.validateConfirmPassword(clave, confirmarClave)
+        }
+    }
+
+    // Validación en tiempo real para nombre
+    LaunchedEffect(nombre) {
+        if (nombre.isNotEmpty()) {
+            viewModel.validateName(nombre)
+        }
+    }
 
     // Observar éxito del registro
     LaunchedEffect(registroExitoso) {
@@ -38,7 +74,7 @@ fun RegistroScreen(
         }
     }
 
-    // Observar errores
+    // Observar errores generales
     LaunchedEffect(errorMensaje) {
         if (errorMensaje.isNotEmpty()) {
             Toast.makeText(context, errorMensaje, Toast.LENGTH_LONG).show()
@@ -69,44 +105,82 @@ fun RegistroScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Campos del formulario
-        OutlinedTextField(
+        // Campo de nombre con validación
+        TextFieldWithError(
             value = nombre,
-            onValueChange = { nombre = it },
-            label = { Text("Nombre completo *") },
-            singleLine = true,
+            onValueChange = {
+                nombre = it
+                if (it.isEmpty()) {
+                    viewModel.validateName(it)
+                }
+            },
+            label = "Nombre completo",
+            validationResult = if (nameError.isNotEmpty()) {
+                com.example.levelup_gamer.ui.components.validation.ValidationResult.Error(nameError)
+            } else {
+                com.example.levelup_gamer.ui.components.validation.ValidationResult.Success
+            },
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
+        // Campo de correo con validación
+        TextFieldWithError(
             value = correo,
-            onValueChange = { correo = it },
-            label = { Text("Correo electrónico *") },
-            singleLine = true,
+            onValueChange = {
+                correo = it
+                if (it.isEmpty()) {
+                    viewModel.validateEmail(it)
+                }
+            },
+            label = "Correo electrónico",
+            validationResult = if (emailError.isNotEmpty()) {
+                com.example.levelup_gamer.ui.components.validation.ValidationResult.Error(emailError)
+            } else {
+                com.example.levelup_gamer.ui.components.validation.ValidationResult.Success
+            },
             modifier = Modifier.fillMaxWidth()
+            // 👈 ELIMINADO keyboardOptions - usa Text por defecto
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
+        // Campo de contraseña con opción mostrar/ocultar
+        PasswordTextFieldWithError(
             value = clave,
-            onValueChange = { clave = it },
-            label = { Text("Contraseña *") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            onValueChange = {
+                clave = it
+                if (it.isEmpty()) {
+                    viewModel.validatePassword(it)
+                }
+            },
+            label = "Contraseña",
+            validationResult = if (passwordError.isNotEmpty()) {
+                com.example.levelup_gamer.ui.components.validation.ValidationResult.Error(passwordError)
+            } else {
+                com.example.levelup_gamer.ui.components.validation.ValidationResult.Success
+            },
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
+        // Campo de confirmar contraseña con opción mostrar/ocultar
+        PasswordTextFieldWithError(
             value = confirmarClave,
-            onValueChange = { confirmarClave = it },
-            label = { Text("Confirmar contraseña *") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            onValueChange = {
+                confirmarClave = it
+                if (it.isEmpty()) {
+                    viewModel.validateConfirmPassword(clave, it)
+                }
+            },
+            label = "Confirmar contraseña",
+            validationResult = if (confirmPasswordError.isNotEmpty()) {
+                com.example.levelup_gamer.ui.components.validation.ValidationResult.Error(confirmPasswordError)
+            } else {
+                com.example.levelup_gamer.ui.components.validation.ValidationResult.Success
+            },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -114,7 +188,21 @@ fun RegistroScreen(
 
         Button(
             onClick = {
-                viewModel.registroUsuario(correo, clave, confirmarClave, nombre)
+                // Validar todos los campos antes de registrar
+                val isEmailValid = viewModel.validateEmail(correo)
+                val isPasswordValid = viewModel.validatePassword(clave)
+                val isConfirmValid = viewModel.validateConfirmPassword(clave, confirmarClave)
+                val isNameValid = viewModel.validateName(nombre)
+
+                if (isEmailValid && isPasswordValid && isConfirmValid && isNameValid) {
+                    viewModel.registroUsuario(correo, clave, confirmarClave, nombre)
+                } else {
+                    Toast.makeText(
+                        context,
+                        "Por favor corrige los errores antes de registrar",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -136,6 +224,16 @@ fun RegistroScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        // Información sobre dominios permitidos
+        Text(
+            "Dominios permitidos: @gmail.com, @duocuc.cl",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Gray,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             "* Campos obligatorios",
