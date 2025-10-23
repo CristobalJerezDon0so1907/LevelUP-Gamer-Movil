@@ -1,6 +1,5 @@
 package com.example.levelup_gamer.ui.screens.splash
 
-import android.window.SplashScreen
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
@@ -17,77 +16,45 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.example.levelup_gamer.R
 import kotlinx.coroutines.delay
-import kotlin.math.tan
 
 @Composable
 fun SplashScreen(
     modifier: Modifier = Modifier
 ) {
-    // Duración total en milisegundos
-    val duration = 800
+    // Animable para la escala del logo
+    val scale = remember { Animatable(0.5f) }
 
-    // Animables para skewX y skewY
-    val skewX = remember { Animatable(0f) }
-    val skewY = remember { Animatable(0f) }
+    // Duración de la animación
+    val duration = 1500
 
     LaunchedEffect(Unit) {
-        // Animación de skewX y skewY con valores de keyframes
-        // 0% (skew 0deg, 0deg)
-        skewX.snapTo(0f)
-        skewY.snapTo(0f)
+        // Animación equivalente a:
+        // from { transform: scale(0.5) } to { transform: scale(1.0) }
+        scale.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(
+                durationMillis = duration,
+                easing = CubicBezierEasing(0.39f, 0.575f, 0.565f, 1.0f)
+            )
+        )
 
-        // 30% (skew 25deg, 25deg)
-        skewX.animateTo(25f, animationSpec = tween(durationMillis = 240, easing = CubicBezierEasing(0.55f, 0.085f, 0.68f, 0.53f)))
-        skewY.animateTo(25f, animationSpec = tween(durationMillis = 240, easing = CubicBezierEasing(0.55f, 0.085f, 0.68f, 0.53f)))
-
-        delay(80) // Esperar para la siguiente transición (40% en el keyframe)
-
-        // 40% (skew -15deg, -15deg)
-        skewX.animateTo(-15f, animationSpec = tween(durationMillis = 80, easing = CubicBezierEasing(0.55f, 0.085f, 0.68f, 0.53f)))
-        skewY.animateTo(-15f, animationSpec = tween(durationMillis = 80, easing = CubicBezierEasing(0.55f, 0.085f, 0.68f, 0.53f)))
-
-        delay(80) // Esperar para la siguiente transición (50% en el keyframe)
-
-        // 50% (skew 15deg, 15deg)
-        skewX.animateTo(15f, animationSpec = tween(durationMillis = 120, easing = CubicBezierEasing(0.55f, 0.085f, 0.68f, 0.53f)))
-        skewY.animateTo(15f, animationSpec = tween(durationMillis = 120, easing = CubicBezierEasing(0.55f, 0.085f, 0.68f, 0.53f)))
-
-        delay(120) // Esperar para la siguiente transición (65% en el keyframe)
-
-        // 65% (skew -5deg, -5deg)
-        skewX.animateTo(-5f, animationSpec = tween(durationMillis = 150, easing = CubicBezierEasing(0.55f, 0.085f, 0.68f, 0.53f)))
-        skewY.animateTo(-5f, animationSpec = tween(durationMillis = 150, easing = CubicBezierEasing(0.55f, 0.085f, 0.68f, 0.53f)))
-
-        delay(120) // Esperar para la siguiente transición (75% en el keyframe)
-
-        // 75% (skew 5deg, 5deg)
-        skewX.animateTo(5f, animationSpec = tween(durationMillis = 120, easing = CubicBezierEasing(0.55f, 0.085f, 0.68f, 0.53f)))
-        skewY.animateTo(5f, animationSpec = tween(durationMillis = 120, easing = CubicBezierEasing(0.55f, 0.085f, 0.68f, 0.53f)))
-
-        delay(160) // Esperar para la siguiente transición (100% en el keyframe)
-
-        // 100% (skew 0deg, 0deg)
-        skewX.animateTo(0f, animationSpec = tween(durationMillis = 160, easing = CubicBezierEasing(0.55f, 0.085f, 0.68f, 0.53f)))
-        skewY.animateTo(0f, animationSpec = tween(durationMillis = 160, easing = CubicBezierEasing(0.55f, 0.085f, 0.68f, 0.53f)))
+        // Pequeña pausa opcional antes de navegar al siguiente screen
+        delay(800)
+        // onSplashFinished() o acción de navegación si aplica
     }
 
-    // Convertir grados a radianes para la función de tan
-    fun degToRad(deg: Float) = deg * (Math.PI / 180f).toFloat()
-
-    // Aplicar skew usando scaleX y scaleY
-    val skewXRad = tan(degToRad(skewX.value))
-    val skewYRad = tan(degToRad(skewY.value))
-
-    // Aplicamos la transformación a la imagen
+    // Aplicamos la escala al logo dentro de un contenedor
     Box(
-        modifier = modifier.graphicsLayer(
-            transformOrigin = TransformOrigin(0.5f, 0.5f),
-            scaleX = 1 + skewXRad, // Aplicamos el efecto de skew en X
-            scaleY = 1 + skewYRad  // Aplicamos el efecto de skew en Y
-        )
+        modifier = modifier
+            .fillMaxSize()
+            .graphicsLayer(
+                scaleX = scale.value,
+                scaleY = scale.value,
+                transformOrigin = TransformOrigin.Center
+            )
     ) {
         Image(
-            painter = painterResource(id = R.drawable.logofeo), // Cambia esto por tu logo
+            painter = painterResource(id = R.drawable.logofeo), // tu logo
             contentDescription = "Logo animado",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Fit
