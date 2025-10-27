@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Reviews
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,6 +24,8 @@ fun PerfilClienteScreen(
     nombre: String = "Cliente",
     onLogout: () -> Unit = {},
     onVerCarrito: () -> Unit = {},
+    onVerResenas: () -> Unit = {},
+    onAgregarResena: () -> Unit = {},
     viewModel: CarritoViewModel
 ) {
     val productos by viewModel.productos.collectAsState()
@@ -61,7 +64,7 @@ fun PerfilClienteScreen(
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
-                // Información del perfil y carrito
+                // Información del perfil
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -80,6 +83,21 @@ fun PerfilClienteScreen(
                         )
                     }
 
+                    // Botón de cerrar sesión
+                    TextButton(
+                        onClick = onLogout,
+                    ) {
+                        Text("Cerrar Sesión")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Botones de acciones
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     // Botón del carrito con badge
                     BadgedBox(
                         badge = {
@@ -89,29 +107,47 @@ fun PerfilClienteScreen(
                                     Text(cantidadTotal.toString())
                                 }
                             }
-                        }
+                        },
+                        modifier = Modifier.weight(1f)
                     ) {
                         FilledTonalButton(
                             onClick = onVerCarrito,
+                            modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.filledTonalButtonColors(
                                 containerColor = Color(0xFF4CAF50)
                             )
                         ) {
                             Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito")
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Ver Carrito")
+                            Text("Carrito")
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    // Botón para ver reseñas
+                    FilledTonalButton(
+                        onClick = onVerResenas,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = Color(0xFF2196F3)
+                        )
+                    ) {
+                        Icon(Icons.Default.Reviews, contentDescription = "Reseñas")
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Reseñas")
+                    }
 
-                // Botón de cerrar sesión
-                TextButton(
-                    onClick = onLogout,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("Cerrar Sesión")
+                    // Botón para agregar reseña
+                    FilledTonalButton(
+                        onClick = onAgregarResena,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = Color(0xFFFF9800)
+                        )
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Agregar reseña")
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Opinión")
+                    }
                 }
             }
         }

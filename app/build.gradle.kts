@@ -66,13 +66,24 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-crashlytics-ktx")
 
+    // Coroutines para Firebase y operaciones asíncronas
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.1")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
-
+    // ViewModel para Compose
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
 
-    //Navigation Compose
+    // Navigation Compose
     implementation("androidx.navigation:navigation-compose:2.7.6")
 
-    implementation("androidx.compose.material:material-icons-extended:1.7.7")
+    // Iconos extendidos para Material
+    implementation("androidx.compose.material:material-icons-extended:1.6.0")
+
+    // Material3
+    implementation("androidx.compose.material3:material3:1.1.2")
+    implementation("androidx.compose.material3:material3-window-size-class:1.1.2")
+
+    // Para snapshotFlow usado en el scroll infinito
+    implementation("androidx.compose.runtime:runtime-livedata:1.6.0")
 }

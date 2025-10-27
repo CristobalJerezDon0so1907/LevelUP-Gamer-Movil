@@ -2,6 +2,8 @@ package com.example.levelup_gamer.ui.screens.perfil
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Reviews
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,9 +15,10 @@ import androidx.compose.ui.graphics.Color
 fun PerfilAdminScreen(
     nombre: String = "Administrador",
     onLogout: () -> Unit = {},
-    onOptionSelected: (String) -> Unit = {}
+    onOptionSelected: (String) -> Unit = {},
+    onVerResenas: () -> Unit = {}
 ) {
-    //Lista
+    // Lista de opciones del admin
     val opciones = listOf(
         "Gestionar usuarios",
         "Ver reportes",
@@ -64,6 +67,21 @@ fun PerfilAdminScreen(
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // === BOTÓN PARA VER RESEÑAS ===
+                FilledTonalButton(
+                    onClick = onVerResenas,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = Color(0xFF2196F3)
+                    )
+                ) {
+                    Icon(Icons.Default.Reviews, contentDescription = "Ver reseñas")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Ver Reseñas de Clientes")
+                }
             }
         }
 
@@ -82,7 +100,7 @@ fun PerfilAdminScreen(
             elevation = CardDefaults.cardElevation(2.dp)
         ) {
             Column(modifier = Modifier.padding(8.dp)) {
-                opciones.forEach { opcion ->
+                opciones.forEachIndexed { index, opcion ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -96,7 +114,10 @@ fun PerfilAdminScreen(
                             color = Color.Black
                         )
                     }
-                    Divider()
+                    // No mostrar divisor después del último elemento
+                    if (index < opciones.size - 1) {
+                        Divider()
+                    }
                 }
             }
         }
