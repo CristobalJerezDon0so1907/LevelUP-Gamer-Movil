@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class ReseñaViewModel(private val repository: ResenaRepository) : ViewModel() {
+class ResenaViewModel(private val repository: ResenaRepository) : ViewModel() {
 
     private val _resenas = MutableStateFlow<List<Reseñas>>(emptyList())
     val resenas: StateFlow<List<Reseñas>> = _resenas.asStateFlow()

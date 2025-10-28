@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.levelup_gamer.components.ResenaCard
-import com.example.levelup_gamer.viewmodel.ReseñaViewModel
+import com.example.levelup_gamer.viewmodel.ResenaViewModel
 import androidx.compose.runtime.collectAsState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -22,7 +22,7 @@ import androidx.compose.runtime.collectAsState
 fun ReseñaScreen(
     onVolver: () -> Unit,
     onAgregarResena: () -> Unit,
-    viewModel: ReseñaViewModel
+    viewModel: ResenaViewModel
 ) {
     LaunchedEffect(key1 = Unit) {
         viewModel.loadResenas()

@@ -13,7 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.levelup_gamer.components.RatingBar
 import com.example.levelup_gamer.model.Reseñas
-import com.example.levelup_gamer.viewmodel.ReseñaViewModel
+import com.example.levelup_gamer.viewmodel.ResenaViewModel
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -21,7 +21,7 @@ import java.util.*
 fun AgregarResenaScreen(
     onVolver: () -> Unit,
     onResenaAgregada: () -> Unit,
-    viewModel: ReseñaViewModel
+    viewModel: ResenaViewModel
 ) {
     var rating by remember { mutableStateOf(0f) }
     var comentario by remember { mutableStateOf("") }

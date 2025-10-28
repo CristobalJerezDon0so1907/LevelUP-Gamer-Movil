@@ -5,20 +5,23 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Reviews
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun PerfilAdminScreen(
     nombre: String = "Administrador",
     onLogout: () -> Unit = {},
-    onOptionSelected: (String) -> Unit = {},
-    onVerResenas: () -> Unit = {}
+    onVerResenas: () -> Unit = {},
+    onGestionUsuarios: () -> Unit = {},
+    onVerReportes: () -> Unit = {},
+    onConfiguraciones: () -> Unit = {},
+    onSoporte: () -> Unit = {}
 ) {
-    // Lista de opciones del admin
+    // Lista de opciones del administrador
     val opciones = listOf(
         "Gestionar usuarios",
         "Ver reportes",
@@ -104,7 +107,14 @@ fun PerfilAdminScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onOptionSelected(opcion) }
+                            .clickable {
+                                when (opcion) {
+                                    "Gestionar usuarios" -> onGestionUsuarios()
+                                    "Ver reportes" -> onVerReportes()
+                                    "Configuraciones" -> onConfiguraciones()
+                                    "Soporte" -> onSoporte()
+                                }
+                            }
                             .padding(vertical = 12.dp, horizontal = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -114,7 +124,6 @@ fun PerfilAdminScreen(
                             color = Color.Black
                         )
                     }
-                    // No mostrar divisor después del último elemento
                     if (index < opciones.size - 1) {
                         Divider()
                     }
