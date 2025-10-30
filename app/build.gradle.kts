@@ -86,4 +86,25 @@ dependencies {
 
     // Para snapshotFlow usado en el scroll infinito
     implementation("androidx.compose.runtime:runtime-livedata:1.6.0")
+
+    //Dependencias CameraX
+    //Para inicializar la camara
+    implementation("androidx.camera:camera-core:1.3.0")
+
+    //Permite controloar la camara en dispositivos actuales
+    implementation("androidx.camera:camera-camera2:1.3.0")
+
+    //Abre y cierra la camara automaticamente cuando la paantalla aparece o desaparece
+    implementation("androidx.camera:camera-lifecycle:1.3.0")
+
+    //Permite mostrar la camara en pantalla
+    implementation("androidx.camera:camera-view:1.3.0")
+
+    //Sirve para detectar codigos de barrar y QR en imagenes en tiempo real
+    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+
+    implementation("io.coil-kt:coil-compose:2.2.2")
+
+    implementation("com.google.accompanist:accompanist-permissions:0.33.0-alpha")
+
 }

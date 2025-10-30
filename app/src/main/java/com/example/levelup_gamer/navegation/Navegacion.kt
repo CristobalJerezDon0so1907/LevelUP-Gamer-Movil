@@ -23,7 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import com.example.levelup_gamer.ui.screens.detalle.DetalleProductoScreen
+import com.example.levelup_gamer.ui.screens.qr.QRScannerScreen
 
 @Composable
 fun AppNavegacion() {
@@ -81,6 +82,7 @@ fun AppNavegacion() {
             )
         }
 
+
         // === PERFIL CLIENTE ===
         composable(
             "perfil_cliente/{nombre}",
@@ -97,9 +99,11 @@ fun AppNavegacion() {
                 onVerCarrito = { navController.navigate("carrito") },
                 onVerResenas = { navController.navigate("resenas") },
                 onAgregarResena = { navController.navigate("agregar_resena") },
+                onEscanearProducto = { navController.navigate("qr_scan") },
                 viewModel = carritoViewModel
             )
         }
+
 
         // === CARRITO ===
         composable("carrito") {
@@ -171,5 +175,27 @@ fun AppNavegacion() {
                 Text("Pantalla de soporte técnico")
             }
         }
+
+        // === ESCANEAR PRODUCTO (QR) ===
+        composable("qr_scan") {
+            QRScannerScreen(navController)
+        }
+
+
+        composable(
+            "detalle_producto/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id") ?: ""
+            DetalleProductoScreen(
+                productoId = id,
+                onVolver = { navController.popBackStack() },
+                onAgregarCarrito = { producto ->
+                    carritoViewModel.agregarAlCarrito(producto)
+                    navController.popBackStack() //
+                }
+            )
+        }
+
     }
 }

@@ -25,8 +25,9 @@ class ProductoRepository {
                 Producto(
                     id = document.id,
                     nombre = document.getString("nombre") ?: "",
+                    descripcion = document.getString("descripcion") ?: "",
                     precio = document.getDouble("precio") ?: 0.0,
-                    imagen = document.getString("imagen") ?: "",
+                    imagenUrl = document.getString("imagenUrl") ?: "",
                     stock = document.getLong("stock")?.toInt() ?: 0
                 )
             }
@@ -58,8 +59,9 @@ class ProductoRepository {
                 Producto(
                     id = document.id,
                     nombre = document.getString("nombre") ?: "",
+                    descripcion = document.getString("descripcion") ?: "",
                     precio = document.getDouble("precio") ?: 0.0,
-                    imagen = document.getString("imagen") ?: "",
+                    imagenUrl = document.getString("imagenUrl") ?: "",
                     stock = document.getLong("stock")?.toInt() ?: 0
                 )
             }
@@ -97,8 +99,9 @@ class ProductoRepository {
                 Producto(
                     id = document.id,
                     nombre = document.getString("nombre") ?: "",
+                    descripcion = document.getString("descripcion") ?: "",
                     precio = document.getDouble("precio") ?: 0.0,
-                    imagen = document.getString("imagen") ?: "",
+                    imagenUrl = document.getString("imagenUrl") ?: "",
                     stock = document.getLong("stock")?.toInt() ?: 0
                 )
             } else {

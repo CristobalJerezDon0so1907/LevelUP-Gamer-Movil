@@ -1,5 +1,7 @@
 package com.example.levelup_gamer.ui.screens.perfil
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -13,11 +15,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.levelup_gamer.viewmodel.CarritoViewModel
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+
 
 @Composable
 fun PerfilClienteScreen(
@@ -26,7 +31,8 @@ fun PerfilClienteScreen(
     onVerCarrito: () -> Unit = {},
     onVerResenas: () -> Unit = {},
     onAgregarResena: () -> Unit = {},
-    viewModel: CarritoViewModel
+    viewModel: CarritoViewModel,
+    onEscanearProducto: () -> Unit
 ) {
     val productos by viewModel.productos.collectAsState()
     val cargando by viewModel.cargando.collectAsState()
@@ -50,6 +56,40 @@ fun PerfilClienteScreen(
             }
     }
 
+    @Composable
+    fun BotonAnimado(
+        onClick: () -> Unit,
+        color: Color,
+        icon: @Composable (() -> Unit)? = null,
+        text: String,
+        modifier: Modifier = Modifier
+    ) {
+        var pressed by remember { mutableStateOf(false) }
+
+        val scale by animateFloatAsState(
+            targetValue = if (pressed) 0.90f else 1f,
+            animationSpec = tween(durationMillis = 120),
+            label = ""
+        )
+
+        Button(
+            onClick = {
+                pressed = true
+                onClick()
+                pressed = false
+            },
+            modifier = modifier.scale(scale),
+            colors = ButtonDefaults.buttonColors(containerColor = color),
+            shape = MaterialTheme.shapes.medium
+        ) {
+            if (icon != null) {
+                icon()
+                Spacer(Modifier.width(6.dp))
+            }
+            Text(text)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -62,9 +102,12 @@ fun PerfilClienteScreen(
             elevation = CardDefaults.cardElevation(4.dp)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Información del perfil
+            // Información del perfil
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -96,58 +139,45 @@ fun PerfilClienteScreen(
                 // Botones de acciones
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Botón del carrito con badge
-                    BadgedBox(
-                        badge = {
-                            val cantidadTotal = carrito.sumOf { it.cantidad }
-                            if (cantidadTotal > 0) {
-                                Badge {
-                                    Text(cantidadTotal.toString())
-                                }
-                            }
-                        },
+
+                    BotonAnimado(
+                        onClick = onVerCarrito,
+                        color = Color(0xFF4CAF50),
+                        icon = { Icon(Icons.Default.ShoppingCart, contentDescription = null) },
+                        text = "Carrito",
                         modifier = Modifier.weight(1f)
-                    ) {
-                        FilledTonalButton(
-                            onClick = onVerCarrito,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = Color(0xFF4CAF50)
-                            )
-                        ) {
-                            Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito")
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Carrito")
-                        }
-                    }
+                    )
 
-                    // Botón para ver reseñas
-                    FilledTonalButton(
+                    BotonAnimado(
                         onClick = onVerResenas,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = Color(0xFF2196F3)
-                        )
-                    ) {
-                        Icon(Icons.Default.Reviews, contentDescription = "Reseñas")
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Reseñas")
-                    }
+                        color = Color(0xFF2196F3),
+                        icon = { Icon(Icons.Default.Reviews, contentDescription = null) },
+                        text = "Reseñas",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
 
-                    // Botón para agregar reseña
-                    FilledTonalButton(
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+
+                    BotonAnimado(
                         onClick = onAgregarResena,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = Color(0xFFFF9800)
-                        )
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Agregar reseña")
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Opinión")
-                    }
+                        color = Color(0xFFFF9800),
+                        icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                        text = "Opinión",
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    BotonAnimado(
+                        onClick = onEscanearProducto,
+                        color = Color(0xFF9C27B0),
+                        text = "Escanear",
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
@@ -230,13 +260,25 @@ fun ItemProducto(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
+
+            AsyncImage(
+                model = producto.imagenUrl,
+                contentDescription = "Imagen del producto",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp),
+                contentScale = ContentScale.Crop
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             Text(
                 text = producto.nombre,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             Text(
                 text = "$${"%.2f".format(producto.precio)}",
@@ -245,34 +287,18 @@ fun ItemProducto(
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            // Mostrar stock y estado
-            if (producto.stock <= 0) {
-                Text(
-                    text = "Agotado",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Red,
-                    fontWeight = FontWeight.Bold
-                )
-            } else if (producto.stock < 10) {
-                Text(
-                    text = "Últimas ${producto.stock} unidades",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFFFF9800),
-                    fontWeight = FontWeight.Bold
-                )
-            } else {
-                Text(
-                    text = "Stock disponible: ${producto.stock}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
+            // Mostrar stock
+            when {
+                producto.stock <= 0 -> Text("Agotado", color = Color.Red, fontWeight = FontWeight.Bold)
+                producto.stock < 10 -> Text("Últimas ${producto.stock} unidades", color = Color(0xFFFF9800), fontWeight = FontWeight.Bold)
+                else -> Text("Stock disponible: ${producto.stock}", color = Color.Gray)
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Controles de cantidad
+            // Controles del carrito
             if (cantidadEnCarrito > 0) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -285,22 +311,11 @@ fun ItemProducto(
                         fontWeight = FontWeight.Bold
                     )
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(
-                            onClick = onRemover,
-                            modifier = Modifier.size(36.dp),
-                            enabled = cantidadEnCarrito > 0
-                        ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onRemover, enabled = cantidadEnCarrito > 0) {
                             Icon(Icons.Outlined.Remove, contentDescription = "Quitar uno")
                         }
-
-                        IconButton(
-                            onClick = onAgregar,
-                            modifier = Modifier.size(36.dp),
-                            enabled = producto.stock > cantidadEnCarrito
-                        ) {
+                        IconButton(onClick = onAgregar, enabled = producto.stock > cantidadEnCarrito) {
                             Icon(Icons.Default.Add, contentDescription = "Agregar uno")
                         }
                     }
