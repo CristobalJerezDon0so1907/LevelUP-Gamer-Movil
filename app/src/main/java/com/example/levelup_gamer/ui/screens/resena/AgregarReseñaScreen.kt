@@ -12,7 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.levelup_gamer.components.RatingBar
-import com.example.levelup_gamer.model.Reseñas
+import com.example.levelup_gamer.model.Resena
 import com.example.levelup_gamer.viewmodel.ResenaViewModel
 import java.util.*
 
@@ -51,7 +51,7 @@ fun AgregarResenaScreen(
                 Button(
                     onClick = {
                         if (rating > 0 && comentario.isNotBlank()) {
-                            val resena = Reseñas(
+                            val resena = Resena(
                                 userId = "user_id_actual", // Reemplazar con ID real
                                 userName = userName,
                                 rating = rating,

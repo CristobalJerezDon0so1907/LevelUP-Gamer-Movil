@@ -1,9 +1,8 @@
 package com.example.levelup_gamer.model
 
-
 import java.util.Date
 
-data class Reseñas(
+data class Resena(
     val id: String = "",
     val userId: String = "",
     val userName: String = "",
@@ -11,9 +10,7 @@ data class Reseñas(
     val rating: Float = 0f,
     val comment: String = "",
     val timestamp: Date = Date(),
-    val productId: String = "", // Opcional para reseñas de productos específicos
+    val productId: String = "",
     val isVerified: Boolean = false,
-    val juego: String = "" // Nombre del juego reseñado
-) {
-    constructor() : this("", "", "", "", 0f, "", Date(), "", false, "")
-}
+    val juego: String = ""
+)

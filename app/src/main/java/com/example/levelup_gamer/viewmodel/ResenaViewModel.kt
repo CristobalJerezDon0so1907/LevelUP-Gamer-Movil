@@ -3,7 +3,7 @@ package com.example.levelup_gamer.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.levelup_gamer.model.Reseñas
+import com.example.levelup_gamer.model.Resena
 import com.example.levelup_gamer.repository.ResenaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,8 +12,8 @@ import kotlinx.coroutines.launch
 
 class ResenaViewModel(private val repository: ResenaRepository) : ViewModel() {
 
-    private val _resenas = MutableStateFlow<List<Reseñas>>(emptyList())
-    val resenas: StateFlow<List<Reseñas>> = _resenas.asStateFlow()
+    private val _resenas = MutableStateFlow<List<Resena>>(emptyList())
+    val resenas: StateFlow<List<Resena>> = _resenas.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -35,7 +35,7 @@ class ResenaViewModel(private val repository: ResenaRepository) : ViewModel() {
         }
     }
 
-    fun addResena(resena: Reseñas, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
+    fun addResena(resena: Resena, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null

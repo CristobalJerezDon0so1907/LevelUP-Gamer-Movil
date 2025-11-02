@@ -15,10 +15,10 @@ import com.example.levelup_gamer.ui.screens.perfil.PerfilAdminScreen
 import com.example.levelup_gamer.ui.screens.perfil.PerfilClienteScreen
 import com.example.levelup_gamer.ui.screens.registro.RegistroScreen
 import com.example.levelup_gamer.ui.screens.resenas.AgregarResenaScreen
-import com.example.levelup_gamer.ui.screens.reseña.ReseñaScreen
 import com.example.levelup_gamer.viewmodel.CarritoViewModel
 import com.example.levelup_gamer.viewmodel.ResenaViewModel
 import com.example.levelup_gamer.viewmodel.ResenaViewModelFactory
+import com.example.levelup_gamer.ui.screens.resena.ResenaScreen
 import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Alignment
@@ -131,11 +131,11 @@ fun AppNavegacion() {
         }
 
         // === RESEÑAS ===
-        composable("agregar_resena") {
-            AgregarResenaScreen(
+        composable("resenas") {
+            ResenaScreen(
                 onVolver = { navController.popBackStack() },
-                onResenaAgregada = { navController.popBackStack() },
-                viewModel = resenaViewModel  //
+                onAgregarResena = { navController.navigate("agregar_resena") },
+                viewModel = resenaViewModel
             )
         }
 
@@ -144,7 +144,7 @@ fun AppNavegacion() {
             AgregarResenaScreen(
                 onVolver = { navController.popBackStack() },
                 onResenaAgregada = { navController.popBackStack() },
-                viewModel = resenaViewModel
+                viewModel = resenaViewModel  //
             )
         }
 
