@@ -131,13 +131,14 @@ fun AppNavegacion() {
         }
 
         // === RESEÑAS ===
-        composable("resenas") {
-            ReseñaScreen(
+        composable("agregar_resena") {
+            AgregarResenaScreen(
                 onVolver = { navController.popBackStack() },
-                onAgregarResena = { navController.navigate("agregar_resena") },
-                viewModel = resenaViewModel
+                onResenaAgregada = { navController.popBackStack() },
+                viewModel = resenaViewModel  //
             )
         }
+
 
         composable("agregar_resena") {
             AgregarResenaScreen(
