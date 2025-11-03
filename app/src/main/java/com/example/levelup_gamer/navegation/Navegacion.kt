@@ -1,30 +1,33 @@
 package com.example.levelup_gamer.navegation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.levelup_gamer.model.Producto
+import com.example.levelup_gamer.model.Usuario
 import com.example.levelup_gamer.repository.ResenaRepository
 import com.example.levelup_gamer.ui.screens.carrito.CarritoScreen
+import com.example.levelup_gamer.ui.screens.detalle.DetalleProductoScreen
 import com.example.levelup_gamer.ui.screens.login.LoginScreen
 import com.example.levelup_gamer.ui.screens.pago.PagoConfirmacionScreen
 import com.example.levelup_gamer.ui.screens.perfil.PerfilAdminScreen
 import com.example.levelup_gamer.ui.screens.perfil.PerfilClienteScreen
+import com.example.levelup_gamer.ui.screens.qr.QRScannerScreen
 import com.example.levelup_gamer.ui.screens.registro.RegistroScreen
-import com.example.levelup_gamer.ui.screens.resenas.AgregarResenaScreen
+import com.example.levelup_gamer.ui.screens.resena.AgregarResenaScreen
+import com.example.levelup_gamer.ui.screens.resena.ResenaScreen
 import com.example.levelup_gamer.viewmodel.CarritoViewModel
 import com.example.levelup_gamer.viewmodel.ResenaViewModel
 import com.example.levelup_gamer.viewmodel.ResenaViewModelFactory
-import com.example.levelup_gamer.ui.screens.resena.ResenaScreen
-import androidx.compose.material3.Text
-import androidx.compose.foundation.layout.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import com.example.levelup_gamer.ui.screens.detalle.DetalleProductoScreen
-import com.example.levelup_gamer.ui.screens.qr.QRScannerScreen
 
 @Composable
 fun AppNavegacion() {
@@ -43,7 +46,7 @@ fun AppNavegacion() {
                 onRegisterClick = {
                     navController.navigate("register")
                 },
-                onLoginSuccess = { user ->
+                onLoginSuccess = { user: Usuario ->
                     when (user.rol) {
                         "admin" -> navController.navigate("perfil_admin/${user.nombre}")
                         else -> navController.navigate("perfil_cliente/${user.nombre}")
@@ -144,7 +147,7 @@ fun AppNavegacion() {
             AgregarResenaScreen(
                 onVolver = { navController.popBackStack() },
                 onResenaAgregada = { navController.popBackStack() },
-                viewModel = resenaViewModel  //
+                viewModel = resenaViewModel
             )
         }
 
@@ -191,9 +194,9 @@ fun AppNavegacion() {
             DetalleProductoScreen(
                 productoId = id,
                 onVolver = { navController.popBackStack() },
-                onAgregarCarrito = { producto ->
+                onAgregarCarrito = { producto: Producto ->
                     carritoViewModel.agregarAlCarrito(producto)
-                    navController.popBackStack() //
+                    navController.popBackStack()
                 }
             )
         }
