@@ -81,7 +81,8 @@ fun AppNavegacion() {
                 onGestionUsuarios = { navController.navigate("gestion_usuarios") },
                 onVerReportes = { navController.navigate("reportes") },
                 onConfiguraciones = { navController.navigate("configuracion") },
-                onSoporte = { navController.navigate("soporte") }
+                onSoporte = { navController.navigate("soporte") },
+                onEscanearProducto = { navController.navigate("qr_scan") }
             )
         }
 

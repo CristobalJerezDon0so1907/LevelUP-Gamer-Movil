@@ -1,13 +1,20 @@
 package com.example.levelup_gamer.ui.screens.perfil
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Reviews
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
@@ -19,7 +26,8 @@ fun PerfilAdminScreen(
     onGestionUsuarios: () -> Unit = {},
     onVerReportes: () -> Unit = {},
     onConfiguraciones: () -> Unit = {},
-    onSoporte: () -> Unit = {}
+    onSoporte: () -> Unit = {},
+    onEscanearProducto: () -> Unit
 ) {
     // Lista de opciones del administrador
     val opciones = listOf(
@@ -28,6 +36,40 @@ fun PerfilAdminScreen(
         "Configuraciones",
         "Soporte"
     )
+
+    @Composable
+    fun BotonAnimado(
+        onClick: () -> Unit,
+        color: Color,
+        icon: @Composable (() -> Unit)? = null,
+        text: String,
+        modifier: Modifier = Modifier
+    ) {
+        var pressed by remember { mutableStateOf(false) }
+
+        val scale by animateFloatAsState(
+            targetValue = if (pressed) 0.90f else 1f,
+            animationSpec = tween(durationMillis = 120),
+            label = ""
+        )
+
+        Button(
+            onClick = {
+                pressed = true
+                onClick()
+                pressed = false
+            },
+            modifier = modifier.scale(scale),
+            colors = ButtonDefaults.buttonColors(containerColor = color),
+            shape = MaterialTheme.shapes.medium
+        ) {
+            if (icon != null) {
+                icon()
+                Spacer(Modifier.width(6.dp))
+            }
+            Text(text)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -73,24 +115,35 @@ fun PerfilAdminScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // === BOTÓN PARA VER RESEÑAS ===
-                FilledTonalButton(
+                // Botones
+                BotonAnimado(
                     onClick = onVerResenas,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = Color(0xFF2196F3)
-                    )
-                ) {
-                    Icon(Icons.Default.Reviews, contentDescription = "Ver reseñas")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Ver Reseñas de Clientes")
-                }
+                    color = Color(0xFF2196F3),
+                    icon = { Icon(Icons.Default.Reviews, contentDescription = null) },
+                    text = "Ver Reseñas",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                BotonAnimado(
+                    onClick = onEscanearProducto,
+                    color = Color(0xFF9C27B0),
+                    text = "Escanear",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                )
+
+
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // === LISTA DE OPCIONES DEL ADMIN ===
+        //Lista de Opciones
         Text(
             text = "Opciones del Administrador",
             style = MaterialTheme.typography.headlineSmall,
