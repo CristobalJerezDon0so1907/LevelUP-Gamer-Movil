@@ -15,20 +15,25 @@ import com.example.levelup_gamer.components.ReviewCard
 import com.example.levelup_gamer.model.Review
 import com.example.levelup_gamer.viewmodel.ReviewViewModel
 import java.util.*
-import androidx.compose.runtime.collectAsState
 
 @Composable
 fun ReviewScreen(
     productId: String? = null,
-    userId: String = "current_user_id", // Debes obtener esto de tu auth system
+    userId: String = "current_user_id", // deberías obtenerlo de FirebaseAuth o similar
     userName: String = "Usuario"
 ) {
     val viewModel: ReviewViewModel = viewModel()
+
+    // ✅ Convertir StateFlow a estados observables de Compose
+    val reviews by viewModel.reviews.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+
     var showAddReview by remember { mutableStateOf(false) }
     var newRating by remember { mutableStateOf(0f) }
     var newComment by remember { mutableStateOf("") }
 
-    LaunchedEffect(key1 = productId) {
+    LaunchedEffect(productId) {
         viewModel.loadReviews(productId)
     }
 
@@ -44,7 +49,7 @@ fun ReviewScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Reseñas (${viewModel.reviews.value.size})",
+                text = "Reseñas (${reviews.size})",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -58,7 +63,7 @@ fun ReviewScreen(
 
         // Lista de reseñas
         when {
-            viewModel.isLoading.value -> {
+            isLoading -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -67,7 +72,7 @@ fun ReviewScreen(
                 }
             }
 
-            viewModel.reviews.value.isEmpty() -> {
+            reviews.isEmpty() -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -84,7 +89,7 @@ fun ReviewScreen(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(viewModel.reviews.value) { review ->
+                    items(reviews) { review ->
                         ReviewCard(review = review)
                     }
                 }
@@ -149,9 +154,9 @@ fun ReviewScreen(
     }
 
     // Mostrar errores
-    viewModel.errorMessage.collectAsState<String?>().value?.let { error ->
+    errorMessage?.let { error ->
         LaunchedEffect(error) {
-            // Puedes mostrar un snackbar aquí
+            // Aquí podrías usar un Snackbar o Log
             println("Error: $error")
             viewModel.clearError()
         }

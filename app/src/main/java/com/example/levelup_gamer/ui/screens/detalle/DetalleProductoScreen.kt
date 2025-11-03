@@ -1,102 +1,93 @@
 package com.example.levelup_gamer.ui.screens.detalle
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.text.font.FontWeight
-import coil.compose.AsyncImage
-import com.google.firebase.firestore.FirebaseFirestore
+import coil.compose.rememberAsyncImagePainter
 import com.example.levelup_gamer.model.Producto
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetalleProductoScreen(
     productoId: String,
     onVolver: () -> Unit,
     onAgregarCarrito: (Producto) -> Unit
 ) {
-    var producto by remember { mutableStateOf<Producto?>(null) }
-    var cargando by remember { mutableStateOf(true) }
+    // 🔹 Ejemplo temporal — en un caso real obtendrías el producto desde un ViewModel o repositorio
+    val productoDemo = Producto(
+        id = productoId, // ✅ El id es String, no se convierte a Int
+        nombre = "Producto #$productoId",
+        descripcion = "Este es el detalle completo del producto con ID $productoId.",
+        precio = 19990.0,
+        imagenUrl = "",
+        stock = 10
+    )
 
-    LaunchedEffect(productoId) {
-        FirebaseFirestore.getInstance()
-            .collection("producto")
-            .document(productoId)
-            .get()
-            .addOnSuccessListener { doc ->
-                producto = doc.toObject(Producto::class.java)?.copy(id = doc.id)
-                cargando = false
-            }
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Detalle del Producto") },
-                navigationIcon = {
-                    TextButton(onClick = onVolver) { Text("Volver") }
-                }
-            )
-        }
-    ) { padding ->
-
-        Box(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Imagen del producto
+            Image(
+                painter = rememberAsyncImagePainter(model = productoDemo.imagenUrl.ifEmpty { "https://via.placeholder.com/200" }),
+                contentDescription = productoDemo.nombre,
+                modifier = Modifier
+                    .size(200.dp)
+                    .padding(8.dp),
+                contentScale = ContentScale.Crop
+            )
 
-            when {
-                cargando -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            Spacer(modifier = Modifier.height(12.dp))
 
-                producto == null -> Text(
-                    "Producto no encontrado",
-                    modifier = Modifier.align(Alignment.Center)
-                )
+            // Nombre
+            Text(
+                text = productoDemo.nombre,
+                style = MaterialTheme.typography.headlineMedium
+            )
 
-                else -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        AsyncImage(
-                            model = producto!!.imagenUrl,
-                            contentDescription = producto!!.nombre,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(220.dp)
-                        )
+            Spacer(modifier = Modifier.height(12.dp))
 
-                        Spacer(Modifier.height(16.dp))
+            // Descripción
+            Text(
+                text = productoDemo.descripcion,
+                style = MaterialTheme.typography.bodyLarge
+            )
 
-                        Text(
-                            producto!!.nombre,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
+            Spacer(modifier = Modifier.height(12.dp))
 
-                        Spacer(Modifier.height(8.dp))
+            // Precio
+            Text(
+                text = "Precio: $${"%.2f".format(productoDemo.precio)}",
+                style = MaterialTheme.typography.titleMedium
+            )
 
-                        Text(producto!!.descripcion)
+            Spacer(modifier = Modifier.height(24.dp))
 
-                        Spacer(Modifier.height(8.dp))
+            // Botón Agregar al carrito
+            Button(onClick = { onAgregarCarrito(productoDemo) }) {
+                Text("Agregar al carrito")
+            }
 
-                        Text("Precio: $${producto!!.precio}", fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(12.dp))
 
-                        Spacer(Modifier.height(12.dp))
-
-                        Button(
-                            onClick = { onAgregarCarrito(producto!!) },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Agregar al carrito")
-                        }
-                    }
-                }
+            // Botón Volver
+            Button(onClick = onVolver) {
+                Text("Volver")
             }
         }
     }
