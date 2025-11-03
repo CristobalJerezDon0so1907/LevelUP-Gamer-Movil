@@ -9,11 +9,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext // Importación para obtener el contexto de notificación
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.levelup_gamer.components.RatingBar
-import com.example.levelup_gamer.model.Resena
+import com.example.levelup_gamer.model.Resena // Usando el modelo Resena (según tu código)
 import com.example.levelup_gamer.viewmodel.ResenaViewModel
+import com.example.levelup_gamer.utils.showResenaNotification // Importación de la función de notificación
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -23,6 +25,9 @@ fun AgregarResenaScreen(
     onResenaAgregada: () -> Unit,
     viewModel: ResenaViewModel
 ) {
+    // Obtiene el contexto para la función de notificación
+    val context = LocalContext.current
+
     var rating by remember { mutableStateOf(0f) }
     var comentario by remember { mutableStateOf("") }
     var juego by remember { mutableStateOf("") }
@@ -51,7 +56,7 @@ fun AgregarResenaScreen(
                 Button(
                     onClick = {
                         if (rating > 0 && comentario.isNotBlank()) {
-                            val resena = Resena(
+                            val resena = Resena( // Usando la clase Resena
                                 userId = "user_id_actual", // Reemplazar con ID real
                                 userName = userName,
                                 rating = rating,
@@ -61,6 +66,15 @@ fun AgregarResenaScreen(
                                 isVerified = true // O false dependiendo de tu lógica
                             )
                             viewModel.addResena(resena) {
+                                // **********************************************
+                                // DISPARAR LA NOTIFICACIÓN EN CASO DE ÉXITO
+                                // **********************************************
+                                showResenaNotification(
+                                    context,
+                                    "¡Reseña Publicada!",
+                                    "Tu reseña de $juego ha sido enviada con $rating estrellas. ¡Gracias!"
+                                )
+
                                 onResenaAgregada()
                             }
                         }
