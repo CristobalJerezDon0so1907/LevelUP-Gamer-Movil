@@ -1,10 +1,10 @@
 package com.example.levelup_gamer.viewmodel
 
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.levelup_gamer.model.Resena
 import com.example.levelup_gamer.repository.ResenaRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,10 +21,14 @@ class ResenaViewModel(private val repository: ResenaRepository) : ViewModel() {
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    fun loadResenas() {
+    // Cargar reseñas automáticamente al iniciar el ViewModel
+    init {
+        loadResenas()
+    }
+
+    private fun loadResenas() {
         viewModelScope.launch {
             _isLoading.value = true
-            _errorMessage.value = null
             try {
                 _resenas.value = repository.getResenas()
             } catch (e: Exception) {
@@ -35,22 +39,20 @@ class ResenaViewModel(private val repository: ResenaRepository) : ViewModel() {
         }
     }
 
-    fun addResena(resena: Resena, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
-        viewModelScope.launch {
+    fun addResena(resena: Resena): Job {
+        return viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
             try {
                 val result = repository.addResena(resena)
-                if (result.isSuccess) {
-                    onSuccess()
-                    loadResenas() // Recargar lista
-                } else {
-                    _errorMessage.value = "Error al agregar reseña"
-                    onError("Error al agregar reseña")
-                }
+                result.fold(
+                    onSuccess = { loadResenas() }, // Si tiene éxito, recargar la lista
+                    onFailure = { exception ->
+                        _errorMessage.value = "Error al agregar la reseña: ${exception.message}"
+                    }
+                )
             } catch (e: Exception) {
-                _errorMessage.value = "Error: ${e.message}"
-                onError(e.message ?: "Error desconocido")
+                _errorMessage.value = "Error inesperado: ${e.message}"
             } finally {
                 _isLoading.value = false
             }

@@ -12,8 +12,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.levelup_gamer.ui.components.forms.TextFieldWithError
-import com.example.levelup_gamer.ui.components.forms.PasswordTextFieldWithError
+import com.example.levelup_gamer.components.forms.TextFieldWithError
+import com.example.levelup_gamer.components.forms.PasswordTextFieldWithError
 
 @Composable
 fun RegistroScreen(

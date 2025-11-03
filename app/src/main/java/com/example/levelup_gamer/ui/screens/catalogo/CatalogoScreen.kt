@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.levelup_gamer.ui.screens.catalogo
 
 import androidx.compose.foundation.layout.*
@@ -13,16 +15,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.levelup_gamer.model.Producto
+import com.example.levelup_gamer.repository.ProductoRepository
 import com.example.levelup_gamer.viewmodel.CarritoViewModel
+import com.example.levelup_gamer.viewmodel.CarritoViewModelFactory
 
 @Composable
 fun CatalogoScreen(
-    onVerCarrito: () -> Unit = {},
-    onConfirmarPago: () -> Unit = {}
+    onVerCarrito: () -> Unit = {}
 ) {
-    val viewModel: CarritoViewModel = viewModel()
+    // CORRECCIÓN: Creación segura del ViewModel con su Factory para evitar que la app se cierre.
+    val productoRepository = remember { ProductoRepository() }
+    val factory = CarritoViewModelFactory(productoRepository)
+    val viewModel: CarritoViewModel = viewModel(factory = factory)
+
     val productos by viewModel.productos.collectAsState()
     val cargando by viewModel.cargando.collectAsState()
     val carrito by viewModel.carrito.collectAsState()
@@ -40,17 +47,14 @@ fun CatalogoScreen(
         ) {
             Text(
                 "Catálogo de Productos",
-                style = MaterialTheme.typography.headlineSmall,
-                fontSize = 20.sp
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
             )
 
-            // Botón del carrito con badge
             BadgedBox(
                 badge = {
                     if (carrito.isNotEmpty()) {
-                        Badge {
-                            Text(carrito.sumOf { it.cantidad }.toString())
-                        }
+                        Badge { Text(carrito.sumOf { it.cantidad }.toString()) }
                     }
                 }
             ) {
@@ -62,23 +66,22 @@ fun CatalogoScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (cargando) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+        if (cargando && productos.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else {
-            LazyColumn {
-                items(productos) { producto ->
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(productos, key = { it.id }) { producto ->
+                    val itemEnCarrito = carrito.find { it.producto.id == producto.id }
+
                     ProductoItem(
                         producto = producto,
-                        onAgregar = { viewModel.agregarAlCarrito(producto) },
-                        onEliminar = { viewModel.removerDelCarrito(producto) },
-                        cantidadEnCarrito = carrito.find { it.producto.id == producto.id }?.cantidad ?: 0
+                        // CORRECCIÓN: Optimizando las funciones para eliminar advertencias de rendimiento.
+                        onAgregar = remember { { viewModel.agregarAlCarrito(producto) } },
+                        onEliminar = remember { { itemEnCarrito?.let { viewModel.removerDelCarrito(it) } } },
+                        cantidadEnCarrito = itemEnCarrito?.cantidad ?: 0
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }
@@ -87,35 +90,30 @@ fun CatalogoScreen(
 
 @Composable
 fun ProductoItem(
-    producto: com.example.levelup_gamer.model.Producto,
+    producto: Producto,
     onAgregar: () -> Unit,
     onEliminar: () -> Unit,
     cantidadEnCarrito: Int
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+    Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(2.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = producto.nombre,
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "$${producto.precio}",
-                style = MaterialTheme.typography.headlineSmall,
+                text = "\$${String.format("%.2f", producto.precio)}", // CORREGIDO: Sintaxis del símbolo '$'
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Controles de cantidad
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -123,19 +121,14 @@ fun ProductoItem(
             ) {
                 Text(
                     text = "Stock: ${producto.stock}",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 if (cantidadEnCarrito > 0) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(
-                            onClick = onEliminar,
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        IconButton(onClick = onEliminar, modifier = Modifier.size(36.dp)) {
+                            Icon(Icons.Default.Delete, contentDescription = "Eliminar uno")
                         }
 
                         Text(
@@ -145,16 +138,13 @@ fun ProductoItem(
                             modifier = Modifier.padding(horizontal = 8.dp)
                         )
 
-                        IconButton(
-                            onClick = onAgregar,
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = "Agregar")
+                        IconButton(onClick = onAgregar, modifier = Modifier.size(36.dp)) {
+                            Icon(Icons.Default.Add, contentDescription = "Agregar uno más")
                         }
                     }
                 } else {
-                    Button(onClick = onAgregar) {
-                        Text("Agregar al carrito")
+                    Button(onClick = onAgregar, enabled = producto.stock > 0) {
+                        Text(if (producto.stock > 0) "Agregar al carrito" else "Agotado")
                     }
                 }
             }

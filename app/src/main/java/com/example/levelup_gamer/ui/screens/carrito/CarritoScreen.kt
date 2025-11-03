@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.levelup_gamer.model.ItemCarrito
 import com.example.levelup_gamer.viewmodel.CarritoViewModel
 
 @Composable
@@ -121,7 +121,8 @@ fun CarritoScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            "$${String.format("%.2f", total)}",
+                            // CORREGIDO: Escapando el símbolo de dólar
+                            text = "\$${String.format("%.2f", total)}",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF4CAF50)
@@ -174,7 +175,7 @@ fun CarritoScreen(
 
 @Composable
 fun ItemCarrito(
-    item: com.example.levelup_gamer.model.ItemCarrito,
+    item: ItemCarrito,
     onEliminar: () -> Unit
 ) {
     Card(
@@ -199,7 +200,8 @@ fun ItemCarrito(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Precio: $${item.producto.precio} c/u",
+                    // CORREGIDO: Escapando el símbolo de dólar
+                    text = "Precio: \$${item.producto.precio} c/u",
                     style = MaterialTheme.typography.bodyMedium
                 )
 
@@ -214,7 +216,8 @@ fun ItemCarrito(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Subtotal: $${String.format("%.2f", item.producto.precio * item.cantidad)}",
+                    // CORREGIDO: Escapando el símbolo de dólar
+                    text = "Subtotal: \$${String.format("%.2f", item.producto.precio * item.cantidad)}",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF2196F3)
