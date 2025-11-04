@@ -1,63 +1,52 @@
 package com.example.levelup_gamer.utils
 
-import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import com.example.levelup_gamer.MainActivity
 import com.example.levelup_gamer.R
 
-const val CHANNEL_ID = "levelup_gamer_channel"
+const val CHANNEL_ID = "payment_channel"
+const val CHANNEL_NAME = "Notificaciones de Pago"
+const val NOTIFICATION_ID = 1
 
 /**
- * Crea el canal de notificación. Debe llamarse una sola vez en MainActivity.
+ * Crea el canal de notificaciones necesario para Android 8.0 (API 26) y superior.
+ * Si el canal ya existe, no se realiza ninguna acción.
  */
 fun createNotificationChannel(context: Context) {
+    // Las notificaciones solo necesitan un canal en versiones de Android Oreo o superiores.
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val channelName = "Notificaciones de LevelUP"
-        val importance = NotificationManager.IMPORTANCE_DEFAULT
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            CHANNEL_NAME,
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = "Canal para notificaciones de pagos y confirmaciones."
+        }
 
-        val channel = NotificationChannel(CHANNEL_ID, channelName, importance)
-
+        // Registra el canal en el sistema.
         val notificationManager: NotificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
         notificationManager.createNotificationChannel(channel)
     }
 }
 
 /**
- * Muestra una notificación local simple.
+ * Construye y muestra una notificación simple para confirmar un pago exitoso.
  */
-@SuppressLint("MissingPermission")
-fun showResenaNotification(context: Context, title: String, message: String) {
-
-    val intent = Intent(context, MainActivity::class.java).apply {
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-    }
-    val pendingIntent: PendingIntent = PendingIntent.getActivity(
-        context,
-        0,
-        intent,
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-    )
-
-    // Usamos R.drawable.ic_launcher_foreground como ejemplo si no tienes un ícono específico.
+fun showPaymentSuccessNotification(context: Context) {
     val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-        .setSmallIcon(R.drawable.ic_launcher_foreground)
-        .setContentTitle(title)
-        .setContentText(message)
-        .setPriority(NotificationCompat.PRIORITY_HIGH)
-        .setContentIntent(pendingIntent)
-        .setAutoCancel(true)
+        .setSmallIcon(R.drawable.ic_launcher_foreground) // Asegúrate de tener este drawable
+        .setContentTitle("¡Pago Exitoso!")
+        .setContentText("Gracias por tu compra en Level UP Gamer.")
+        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .setAutoCancel(true) // La notificación se cierra al tocarla.
 
-    with(NotificationManagerCompat.from(context)) {
-        val notificationId = System.currentTimeMillis().toInt()
-        notify(notificationId, builder.build())
-    }
+    val notificationManager: NotificationManager =
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    
+    // Muestra la notificación.
+    notificationManager.notify(NOTIFICATION_ID, builder.build())
 }

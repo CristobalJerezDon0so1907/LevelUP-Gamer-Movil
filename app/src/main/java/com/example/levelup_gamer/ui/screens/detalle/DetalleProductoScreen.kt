@@ -1,94 +1,129 @@
 package com.example.levelup_gamer.ui.screens.detalle
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.levelup_gamer.model.Producto
+import com.example.levelup_gamer.repository.ProductoRepository
+import com.example.levelup_gamer.viewmodel.ProductoUiState
+import com.example.levelup_gamer.viewmodel.ProductoViewModel
+import com.example.levelup_gamer.viewmodel.ProductoViewModelFactory
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetalleProductoScreen(
     productoId: String,
     onVolver: () -> Unit,
     onAgregarCarrito: (Producto) -> Unit
 ) {
-    // 🔹 Ejemplo temporal — en un caso real obtendrías el producto desde un ViewModel o repositorio
-    val productoDemo = Producto(
-        id = productoId, // ✅ El id es String, no se convierte a Int
-        nombre = "Producto #$productoId",
-        descripcion = "Este es el detalle completo del producto con ID $productoId.",
-        precio = 19990.0,
-        imagenUrl = "",
-        stock = 10
-    )
+    // Usamos la Factory para crear el ViewModel con su dependencia
+    val factory = ProductoViewModelFactory(ProductoRepository())
+    val viewModel: ProductoViewModel = viewModel(factory = factory)
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Column(
+    // Cargamos el producto solo una vez cuando el Composable se muestra por primera vez
+    LaunchedEffect(productoId) {
+        viewModel.cargarProducto(productoId)
+    }
+
+    val uiState by viewModel.uiState.collectAsState()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Detalle del Producto") },
+                navigationIcon = {
+                    IconButton(onClick = onVolver) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(paddingValues)
+                .padding(16.dp)
         ) {
-            // Imagen del producto
-            Image(
-                painter = rememberAsyncImagePainter(model = productoDemo.imagenUrl.ifEmpty { "https://via.placeholder.com/200" }),
-                contentDescription = productoDemo.nombre,
-                modifier = Modifier
-                    .size(200.dp)
-                    .padding(8.dp),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Nombre
-            Text(
-                text = productoDemo.nombre,
-                style = MaterialTheme.typography.headlineMedium
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Descripción
-            Text(
-                text = productoDemo.descripcion,
-                style = MaterialTheme.typography.bodyLarge
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Precio
-            Text(
-                text = "Precio: $${"%.2f".format(productoDemo.precio)}",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Botón Agregar al carrito
-            Button(onClick = { onAgregarCarrito(productoDemo) }) {
-                Text("Agregar al carrito")
+            when (val state = uiState) {
+                is ProductoUiState.Loading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+                is ProductoUiState.Success -> {
+                    DetalleProductoContent(state.producto, onAgregarCarrito)
+                }
+                is ProductoUiState.Error -> {
+                    Text(state.message, modifier = Modifier.align(Alignment.Center))
+                }
             }
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(12.dp))
+@Composable
+fun DetalleProductoContent(producto: Producto, onAgregarCarrito: (Producto) -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(producto.imagenUrl.ifEmpty { "https://via.placeholder.com/300" })
+                .crossfade(true)
+                .build(),
+            contentDescription = producto.nombre,
+            modifier = Modifier
+                .size(300.dp)
+                .padding(8.dp),
+            contentScale = ContentScale.Crop
+        )
 
-            // Botón Volver
-            Button(onClick = onVolver) {
-                Text("Volver")
-            }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = producto.nombre,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = producto.descripcion,
+            style = MaterialTheme.typography.bodyLarge
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = "S/.${producto.precio}",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(onClick = { onAgregarCarrito(producto) }) {
+            Text("Agregar al carrito")
         }
     }
 }

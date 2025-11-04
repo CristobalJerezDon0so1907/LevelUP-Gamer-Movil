@@ -1,6 +1,6 @@
 package com.example.levelup_gamer.utils
 
-import com.example.levelup_gamer.ui.components.validation.ValidationResult
+import com.example.levelup_gamer.components.validation.ValidationResult
 
 object FormValidator {
 
@@ -68,7 +68,7 @@ object FormValidator {
             name.isEmpty() -> ValidationResult.Error("El nombre es obligatorio")
             name.length < 2 -> ValidationResult.Error("Nombre muy corto")
             name.length > 50 -> ValidationResult.Error("Nombre muy largo")
-            !name.matches(Regex("^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+\$")) ->
+            !name.matches(Regex("^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+$")) -> // CORREGIDO
                 ValidationResult.Error("Solo letras y espacios")
             else -> ValidationResult.Success
         }

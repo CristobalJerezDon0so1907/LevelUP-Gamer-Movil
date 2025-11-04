@@ -2,18 +2,18 @@ package com.example.levelup_gamer.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Colores primarios de la paleta Cyberpunk
-val CyberGreen = Color(0xFF39FF14)      // Verde neón, para acentos y botones de acción
-val CyberBlue = Color(0xFF1E90FF)       // Azul eléctrico, para títulos y elementos importantes
-val CyberBlack = Color(0xFF0A0A0A)      // Un negro ligeramente más suave que el puro
-val CyberWhite = Color(0xFFFAFAFA)      // Un blanco ligeramente roto para textos
-val CyberGray = Color(0xFF8B8B8B)       // Gris para textos secundarios y bordes
+// Paleta de colores principal con estilo Neón/Gamer
+val NeonGreen = Color(0xFF39FF14)      // Verde neón brillante para acciones primarias (botones, etc.)
+val ElectricBlue = Color(0xFF00FFFF)    // Azul cian/eléctrico para enlaces y acentos secundarios.
+val DeepSpaceBlack = Color(0xFF0D0D1A)  // Un fondo de espacio profundo, casi negro con un toque de azul.
+val LightGray = Color(0xFFCCCCCC)      // Un gris claro para texto principal y cuerpos de texto.
+val MediumGray = Color(0xFF8B8B8B)      // Gris medio para textos secundarios, placeholders y bordes.
+val CardBackground = Color(0xFF1A1A26)  // Fondo para tarjetas, text fields, ligeramente más claro que el fondo principal.
+val NeonPurple = Color(0xFFBF40BF)      // Morado neón para acciones terciarias.
 
-// Colores para el tema de la aplicación (compatibilidad con Material 3)
-val Purple80 = CyberBlue
-val PurpleGrey80 = CyberGray
-val Pink80 = CyberGreen
-
-val Purple40 = CyberBlue
-val PurpleGrey40 = CyberGray
-val Pink40 = CyberGreen
+// --- DEPRECATED: Se mantienen por si algún componente antiguo los usa, pero se deben reemplazar ---
+val CyberGreen = NeonGreen
+val CyberBlue = ElectricBlue
+val CyberBlack = DeepSpaceBlack
+val CyberWhite = LightGray
+val CyberGray = MediumGray

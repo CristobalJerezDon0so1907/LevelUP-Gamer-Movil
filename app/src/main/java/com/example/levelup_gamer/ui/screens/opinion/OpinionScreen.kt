@@ -1,4 +1,4 @@
-package com.example.levelup_gamer.ui.screens.resena
+package com.example.levelup_gamer.ui.screens.opinion
 
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -24,7 +24,7 @@ import com.example.levelup_gamer.viewmodel.OpinionViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AgregarResenaScreen(
+fun OpinionScreen(
     onVolver: () -> Unit,
     onOpinionEnviada: () -> Unit
 ) {

@@ -1,32 +1,48 @@
 package com.example.levelup_gamer.ui.screens.perfil
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilClienteScreen(
-    onCerrarSesion: () -> Unit,
-    onVerCatalogo: () -> Unit
+    onVolverAtras: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Bienvenido Cliente 👤", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(20.dp))
-        Button(onClick = onVerCatalogo) {
-            Text("Ir al Catálogo")
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Mi Perfil") },
+                navigationIcon = {
+                    IconButton(onClick = onVolverAtras) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                    }
+                }
+            )
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        TextButton(onClick = onCerrarSesion) {
-            Text("Cerrar Sesión")
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("Pantalla de Perfil de Cliente")
         }
     }
 }

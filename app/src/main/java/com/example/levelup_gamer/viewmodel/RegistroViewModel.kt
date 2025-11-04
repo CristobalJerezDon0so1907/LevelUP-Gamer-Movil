@@ -2,25 +2,26 @@ package com.example.levelup_gamer.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.levelup_gamer.repository.UsuarioRepository
+import com.example.levelup_gamer.components.validation.ValidationResult
+import com.example.levelup_gamer.model.User
+import com.example.levelup_gamer.repository.UserRepository
 import com.example.levelup_gamer.utils.FormValidator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class RegistroViewModel : ViewModel() {
-    private val repositorio = UsuarioRepository()
+class RegistroViewModel(private val userRepository: UserRepository) : ViewModel() {
 
     private val _cargando = MutableStateFlow(false)
     val cargando: StateFlow<Boolean> = _cargando
 
-    private val _registroExitoso = MutableStateFlow(false)
-    val registroExitoso: StateFlow<Boolean> = _registroExitoso
+    // 1. Reemplazamos el booleano por un estado que contendrá el usuario creado.
+    private val _usuarioRegistrado = MutableStateFlow<User?>(null)
+    val usuarioRegistrado: StateFlow<User?> = _usuarioRegistrado
 
     private val _errorMensaje = MutableStateFlow("")
     val errorMensaje: StateFlow<String> = _errorMensaje
 
-    // Nuevos estados para errores específicos
     private val _emailError = MutableStateFlow("")
     val emailError: StateFlow<String> = _emailError
 
@@ -35,34 +36,29 @@ class RegistroViewModel : ViewModel() {
 
     fun validateEmail(email: String): Boolean {
         val result = FormValidator.isValidEmail(email)
-        _emailError.value = if (result is com.example.levelup_gamer.ui.components.validation.ValidationResult.Error)
-            result.message else ""
-        return result.isValid
+        _emailError.value = if (result is ValidationResult.Error) result.message else ""
+        return result is ValidationResult.Success
     }
 
     fun validatePassword(password: String): Boolean {
         val result = FormValidator.isValidPassword(password)
-        _passwordError.value = if (result is com.example.levelup_gamer.ui.components.validation.ValidationResult.Error)
-            result.message else ""
-        return result.isValid
+        _passwordError.value = if (result is ValidationResult.Error) result.message else ""
+        return result is ValidationResult.Success
     }
 
     fun validateConfirmPassword(password: String, confirmPassword: String): Boolean {
         val result = FormValidator.doPasswordsMatch(password, confirmPassword)
-        _confirmPasswordError.value = if (result is com.example.levelup_gamer.ui.components.validation.ValidationResult.Error)
-            result.message else ""
-        return result.isValid
+        _confirmPasswordError.value = if (result is ValidationResult.Error) result.message else ""
+        return result is ValidationResult.Success
     }
 
     fun validateName(name: String): Boolean {
         val result = FormValidator.isValidName(name)
-        _nameError.value = if (result is com.example.levelup_gamer.ui.components.validation.ValidationResult.Error)
-            result.message else ""
-        return result.isValid
+        _nameError.value = if (result is ValidationResult.Error) result.message else ""
+        return result is ValidationResult.Success
     }
 
     fun registroUsuario(correo: String, clave: String, confirmarClave: String, nombre: String) {
-        // Validar todos los campos
         val isEmailValid = validateEmail(correo)
         val isPasswordValid = validatePassword(clave)
         val isConfirmValid = validateConfirmPassword(clave, confirmarClave)
@@ -77,17 +73,21 @@ class RegistroViewModel : ViewModel() {
         _errorMensaje.value = ""
 
         viewModelScope.launch {
-            val exitoso = repositorio.registroUsuario(correo, clave, nombre)
+            val result = userRepository.createUser(username = nombre, email = correo, password = clave)
             _cargando.value = false
-            _registroExitoso.value = exitoso
-            if (!exitoso) {
-                _errorMensaje.value = "El correo ya está registrado. Intenta con otro."
+            
+            // 2. En caso de éxito, guardamos el usuario completo en el nuevo estado.
+            result.onSuccess { user ->
+                _usuarioRegistrado.value = user
+            }.onFailure { exception ->
+                _errorMensaje.value = exception.message ?: "Error desconocido durante el registro"
             }
         }
     }
 
     fun limpiarRegistro() {
-        _registroExitoso.value = false
+        // 3. Limpiamos el nuevo estado.
+        _usuarioRegistrado.value = null
         _errorMensaje.value = ""
         _emailError.value = ""
         _passwordError.value = ""

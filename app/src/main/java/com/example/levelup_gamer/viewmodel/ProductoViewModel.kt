@@ -8,46 +8,30 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class ProductoViewModel(
-    private val repository: ProductoRepository = ProductoRepository()
-) : ViewModel() {
+sealed class ProductoUiState {
+    object Loading : ProductoUiState()
+    data class Success(val producto: Producto) : ProductoUiState()
+    data class Error(val message: String) : ProductoUiState()
+}
 
-    private val _productos = MutableStateFlow<List<Producto>>(emptyList())
-    val productos: StateFlow<List<Producto>> = _productos
+class ProductoViewModel(private val repository: ProductoRepository) : ViewModel() {
 
-    // Estado para el producto cargado por id (detalle)
-    private val _productoSeleccionado = MutableStateFlow<Producto?>(null)
-    val productoSeleccionado: StateFlow<Producto?> = _productoSeleccionado
+    private val _uiState = MutableStateFlow<ProductoUiState>(ProductoUiState.Loading)
+    val uiState: StateFlow<ProductoUiState> = _uiState
 
-    init {
-        cargarProductos()
-    }
-
-    private fun cargarProductos() {
+    fun cargarProducto(productoId: String) {
         viewModelScope.launch {
-            try {
-                val resultado = repository.obtenerProductos()
-                _productos.value = resultado.productos
-            } catch (e: Exception) {
-                _productos.value = emptyList()
-            }
-        }
-    }
-
-    /** Carga un producto por su id y lo deja en productoSeleccionado (null si no existe). */
-    fun cargarProductoPorId(productoId: String) {
-        viewModelScope.launch {
+            _uiState.value = ProductoUiState.Loading
             try {
                 val producto = repository.obtenerProductoPorId(productoId)
-                _productoSeleccionado.value = producto
+                if (producto != null) {
+                    _uiState.value = ProductoUiState.Success(producto)
+                } else {
+                    _uiState.value = ProductoUiState.Error("Producto no encontrado")
+                }
             } catch (e: Exception) {
-                _productoSeleccionado.value = null
+                _uiState.value = ProductoUiState.Error("Error al cargar el producto: ${e.message}")
             }
         }
-    }
-
-    /** Limpia el producto seleccionado (opcional). */
-    fun limpiarProductoSeleccionado() {
-        _productoSeleccionado.value = null
     }
 }

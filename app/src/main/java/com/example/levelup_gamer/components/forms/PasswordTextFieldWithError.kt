@@ -12,28 +12,26 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.levelup_gamer.ui.components.validation.ValidationResult
 
 @Composable
 fun PasswordTextFieldWithError(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
-    validationResult: ValidationResult,
+    errorMessage: String?,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
-    // CORREGIDO: Aceptando el parámetro colors
     colors: TextFieldColors = TextFieldDefaults.colors()
 ) {
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    val isError = !errorMessage.isNullOrEmpty()
 
     Column(
         modifier = modifier.fillMaxWidth()
@@ -42,7 +40,7 @@ fun PasswordTextFieldWithError(
             value = value,
             onValueChange = onValueChange,
             label = { Text(label) },
-            isError = validationResult is ValidationResult.Error,
+            isError = isError,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
@@ -59,14 +57,13 @@ fun PasswordTextFieldWithError(
                     Icon(imageVector = image, description)
                 }
             },
-            // CORREGIDO: Pasando los colors al componente interno
             colors = colors
         )
 
-        if (validationResult is ValidationResult.Error) {
+        if (isError) {
             Text(
-                text = validationResult.message,
-                color = Color(0xFFD32F2F),
+                text = errorMessage!!, // Sabemos que no es nulo por la comprobación isError
+                color = MaterialTheme.colorScheme.error,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(start = 16.dp, top = 4.dp)
             )

@@ -9,8 +9,9 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun PerfilAdminScreen(
-    onCerrarSesion: () -> Unit,
-    onVerCatalogo: () -> Unit
+    onVerReportes: () -> Unit,
+    onGestionUsuarios: () -> Unit,
+    onCerrarSesion: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -21,8 +22,12 @@ fun PerfilAdminScreen(
     ) {
         Text("Panel del Administrador ⚙️", style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(20.dp))
-        Button(onClick = onVerCatalogo) {
-            Text("Ir al Catálogo")
+        Button(onClick = onVerReportes) {
+            Text("Ver Reportes")
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(onClick = onGestionUsuarios) {
+            Text("Gestionar Usuarios")
         }
         Spacer(modifier = Modifier.height(8.dp))
         TextButton(onClick = onCerrarSesion) {

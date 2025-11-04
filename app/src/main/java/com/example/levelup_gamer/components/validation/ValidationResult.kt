@@ -1,4 +1,4 @@
-package com.example.levelup_gamer.ui.components.validation
+package com.example.levelup_gamer.components.validation
 
 sealed class ValidationResult {
     object Success : ValidationResult()
