@@ -1,63 +1,59 @@
 package com.example.levelup_gamer.ui.screens.splash
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+
 import com.example.levelup_gamer.R
-import kotlinx.coroutines.delay
 
 @Composable
-fun SplashScreen(
-    modifier: Modifier = Modifier
-) {
-    // Animable para la escala del logo
-    val scale = remember { Animatable(0.5f) }
+fun SplashSplash(
+    modifier: Modifier = Modifier,
 
-    // Duración de la animación
-    val duration = 1500
+    ) {
+    // Animatable para escala
+    val scale = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
 
+    // Lanzamos animación solo una vez al iniciar el Composable
     LaunchedEffect(Unit) {
-        // Animación equivalente a:
-        // from { transform: scale(0.5) } to { transform: scale(1.0) }
         scale.animateTo(
             targetValue = 1f,
             animationSpec = tween(
-                durationMillis = duration,
-                easing = CubicBezierEasing(0.39f, 0.575f, 0.565f, 1.0f)
+                durationMillis = 500,
+                easing = androidx.compose.animation.core.CubicBezierEasing(0.25f, 0.46f, 0.45f, 0.94f)
             )
         )
-
-        // Pequeña pausa opcional antes de navegar al siguiente screen
-        delay(800)
-        // onSplashFinished() o acción de navegación si aplica
     }
 
-    // Aplicamos la escala al logo dentro de un contenedor
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .graphicsLayer(
-                scaleX = scale.value,
-                scaleY = scale.value,
-                transformOrigin = TransformOrigin.Center
-            )
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.BottomCenter // Anclamos la imagen al fondo centro para el transform-origin
     ) {
         Image(
-            painter = painterResource(id = R.drawable.logofeo), // tu logo
-            contentDescription = "Logo animado",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Fit
+            painter = painterResource(id = R.drawable.logofeo),
+            contentDescription = "Logo",
+            modifier = Modifier
+                .size(460.dp)
+                // El origen del scale será el pivotY = altura (parte inferior), pivotX = mitad (centro)
+                .graphicsLayer {
+                    scaleX = scale.value
+                    scaleY = scale.value
+                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
+                    alpha = 1f // opacidad constante
+                }
         )
     }
 }

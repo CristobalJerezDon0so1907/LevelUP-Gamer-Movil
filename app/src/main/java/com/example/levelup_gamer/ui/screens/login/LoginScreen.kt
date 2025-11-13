@@ -1,192 +1,125 @@
 package com.example.levelup_gamer.ui.screens.login
 
-import android.widget.Toast
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.Composable
+
+import android.widget.Toast //Mensaje emergentes
+import androidx.compose.foundation.layout.* //Organizar los elementos en una vista
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.text.KeyboardOptions //Mostrar la entre de datos al usuario
+import androidx.compose.material3.* //Elementos para diseñar UI
+import androidx.compose.runtime.* // Manejar los estados de la app
+import androidx.compose.ui.Alignment // Alinear los elementos
+import androidx.compose.ui.Modifier //Modificar el diseño visual de los elemento
+import androidx.compose.ui.platform.LocalContext //obtener el contexto o estado en ejecución del ciclo de vida de la app y poder mostrar mensaje
+import androidx.compose.ui.text.input.KeyboardType //Controlar el tipo de entrada para el usuario
+import androidx.compose.ui.text.input.PasswordVisualTransformation //Ocultar la contraseña al escribirla
+import androidx.compose.ui.unit.dp //Controlar el tamaño de los elementos
+import androidx.compose.ui.graphics.Color //Controlar el color de los elementos
+
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.levelup_gamer.di.Graph
-import com.example.levelup_gamer.model.User
-import com.example.levelup_gamer.ui.theme.ElectricBlue
-import com.example.levelup_gamer.ui.theme.NeonGreen
-import com.example.levelup_gamer.viewmodel.LoginUiState
+import com.example.levelup_gamer.repository.AuthRepository
 import com.example.levelup_gamer.viewmodel.LoginViewModel
-import com.example.levelup_gamer.viewmodel.LoginViewModelFactory
 
 @Composable
-fun LoginScreen(
-    onLoginExitoso: (user: User) -> Unit, // Modificado para pasar User
-    onIrRegistro: () -> Unit
-) {
+fun LoginScreen(onRegisterClick: () -> Unit = {}, //Agregar al nuevo LoginScreen
+                onLoginSuccess: (user: com.example.levelup_gamer.model.Usuario ) -> Unit = {}) {
+    //Variable para obtener en tiempo de ejecución el estado del ciclo de vida de app
     val context = LocalContext.current
-    // Usamos la Factory con el repositorio compartido desde el Graph
-    val factory = LoginViewModelFactory(Graph.userRepository)
-    val viewModel: LoginViewModel = viewModel(factory = factory)
 
-    val uiState by viewModel.uiState.collectAsState()
+    //Variable para almacenar en nombre del usuario ** cabiar correo
     var correo by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
 
-    // Observa el estado de la UI para reaccionar a cambios (éxito, error)
-    LaunchedEffect(uiState) {
-        when (val state = uiState) {
-            is LoginUiState.Success -> {
-                // Pasamos el objeto User unificado
-                Toast.makeText(context, "¡Bienvenido, ${state.user.username}!", Toast.LENGTH_SHORT).show()
-                onLoginExitoso(state.user)
-                viewModel.resetState() // Resetea el estado para futuras navegaciones
+    //Variable para almacenar la clave del usuario
+    var pass by remember { mutableStateOf("") }
+
+    val viewModel: LoginViewModel =viewModel()
+    val user by viewModel.user.collectAsState()
+    val carga by viewModel.carga.collectAsState()
+
+    val repositorio = AuthRepository()//Agregar al nuevo LoginScreen
+
+    //Observar cuando el usuario este logueado
+    LaunchedEffect(user) {
+        user?.let {
+            val mensaje = when (it.rol) {
+                "admin" -> "Bienvenido Admin: ${it.nombre}"
+                else -> "Bienvenido: ${it.nombre}"
             }
-            is LoginUiState.Error -> {
-                Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
-                viewModel.resetState()
-            }
-            else -> Unit // Idle o Loading
+            Toast.makeText(context, mensaje, Toast.LENGTH_LONG).show()
+            onLoginSuccess(it)
         }
     }
 
-    Box(
+    //Configuración para organizar los elementos de la pantalla usando el componente Column()
+    Column (
         modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(colors = listOf(Color(0xFF0D0D1A), Color(0xFF1A1A2E)))
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
+            .fillMaxSize() //Rellenar todo el espacio diponible de la pantalla
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ){
+        //Componente tipo Text() para agregar un título
+        Text("Inciar Sesión",
+            style = MaterialTheme.typography.headlineSmall,
+            color = Color(0xFF4CAF50))
 
-            val neonTextStyle = TextStyle(
-                fontWeight = FontWeight.Bold,
-                shadow = Shadow(NeonGreen, blurRadius = 25f)
-            )
+        //Componente Spacer() para agregar un separador entre los elementos
+        Spacer(Modifier.height(46.dp))
 
-            Text(
-                text = "LEVEL UP GAMER",
-                style = neonTextStyle.copy(fontSize = 36.sp, color = NeonGreen),
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = "INICIAR SESIÓN",
-                style = neonTextStyle.copy(fontSize = 24.sp, color = Color.White),
-                textAlign = TextAlign.Center
-            )
+        //Componente tipo OutlinedTextField() para ingresar datos por usuario
+        OutlinedTextField(
+            //Variable para el nombre del usuario
+            value = correo,
+            onValueChange = { correo = it },
+            label = { Text("Correo", color = Color(0xFFFF5722))},
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
 
-            Spacer(modifier = Modifier.height(40.dp))
+        //Componente Spacer() para agregar un separador entre los elementos
+        Spacer(Modifier.height(10.dp))
 
-            // Form container
-            Column(
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
-                    .padding(20.dp)
-            ) {
-                Text("CORREO ELECTRÓNICO", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                TextField(
-                    value = correo,
-                    onValueChange = { correo = it },
-                    placeholder = { Text("tu.correo@ejemplo.com") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = NeonGreen,
-                        unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        cursorColor = NeonGreen,
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-                    )
-                )
+        //Componente tipo OutlinedTextField() para ingresar datos por usuario
+        OutlinedTextField(
+            //Variable para la clave del usuario
+            value = pass,
+            onValueChange = { pass = it },
+            label = { Text("Clave", color = Color(0xFFFF5722))},
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            modifier = Modifier.fillMaxWidth()
+        )
 
-                Spacer(modifier = Modifier.height(16.dp))
+        //Componente Spacer() para agregar un separador entre los elementos
+        Spacer(Modifier.height(30.dp))
 
-                Text("CONTRASEÑA", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                TextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    placeholder = { Text("Ingresa tu contraseña") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    trailingIcon = {
-                        val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(imageVector = image, contentDescription = "Toggle password visibility", tint = NeonGreen)
-                        }
-                    },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = NeonGreen,
-                        unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        cursorColor = NeonGreen,
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = { viewModel.login(correo, password) },
-                    enabled = uiState !is LoginUiState.Loading,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                        .shadow(elevation = 15.dp, spotColor = NeonGreen, ambientColor = NeonGreen),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = NeonGreen)
-                ) {
-                    if (uiState is LoginUiState.Loading) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-                    } else {
-                        Text("INGRESAR AL SISTEMA", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
-                    }
+        //Componente Button() para agrega un boton
+        Button(
+            onClick = {
+                if (correo.isEmpty() || pass.isEmpty()) {
+                    Toast.makeText(context, "Complete todos los campos", Toast.LENGTH_SHORT).show()
+                    return@Button
                 }
+                viewModel.login(correo, pass)
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF81154C),
+                contentColor = Color(0xFFC7F9CC)
+            ),
+            enabled = !carga
+        ){
+            if(carga) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.Gray)
+            } else {
+                Text("Entrar")
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Row {
-                Text("¿NUEVO EN LEVEL UP GAMER? ", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(
-                    text = "REGÍSTRATE",
-                    color = ElectricBlue,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable { onIrRegistro() }
-                )
-            }
+        }
+        //Botón para agregar registro
+        Spacer(Modifier.height(16.dp))
+        TextButton(onClick = onRegisterClick) {
+            Text("¿No tienes cuenta? Registrate aquí", color = Color(0xFF81154C))
         }
     }
 }

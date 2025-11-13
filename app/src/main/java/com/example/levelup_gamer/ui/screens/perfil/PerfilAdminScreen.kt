@@ -2,35 +2,56 @@ package com.example.levelup_gamer.ui.screens.perfil
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun PerfilAdminScreen(
-    onVerReportes: () -> Unit,
-    onGestionUsuarios: () -> Unit,
-    onCerrarSesion: () -> Unit
+    nombre: String = "Administrador",
+    onLogout: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Panel del Administrador ⚙️", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(20.dp))
-        Button(onClick = onVerReportes) {
-            Text("Ver Reportes")
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = onGestionUsuarios) {
-            Text("Gestionar Usuarios")
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        TextButton(onClick = onCerrarSesion) {
+        Text(
+            "Panel de Administrador",
+            style = MaterialTheme.typography.headlineMedium,
+            color = Color(0xFFD32F2F)
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            "Bienvenido $nombre",  // Muestra el nombre del admin
+            style = MaterialTheme.typography.bodyLarge
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            "Rol: Administrador",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.Gray
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = {
+
+                onLogout()
+            },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFD32F2F)
+            )
+        ) {
             Text("Cerrar Sesión")
         }
     }
