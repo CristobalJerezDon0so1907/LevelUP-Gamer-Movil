@@ -24,7 +24,7 @@ fun AppNavegacion() {
         composable("login") {
             LoginScreen(
                 onRegisterClick = {
-                    navController.navigate("register")
+                    navController.navigate("registro")
                 },
                 onLoginSuccess = { user ->
                     // Navegar según el rol pasando el nombre como parámetro
@@ -36,13 +36,8 @@ fun AppNavegacion() {
             )
         }
 
-        composable("register") {
-            RegistroScreen(
-                onBack = { navController.popBackStack() },
-                onRegisterSuccess = {
-                    navController.popBackStack()
-                }
-            )
+        composable("registro") {
+            RegistroScreen(navController = navController)
         }
 
         composable(
@@ -77,5 +72,6 @@ fun AppNavegacion() {
                 }
             )
         }
+
     }
 }
