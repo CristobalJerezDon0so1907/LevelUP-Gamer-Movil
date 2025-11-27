@@ -111,6 +111,7 @@ fun PerfilClienteScreen(
                         }
                     }
 
+                    //Boton de agregar reseña
                     FilledTonalButton(
                         onClick = onAgregarResena,
                         modifier = Modifier

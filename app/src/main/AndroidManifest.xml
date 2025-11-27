@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Permiso para cargar imágenes desde internet -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Permiso para usar la cámara (necesario para escanear QR) -->
-    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- CameraX -->
+    <uses-feature android:name="android.hardware.camera.any" />
+    <uses-permission android:name="android.permission.CAMERA" /> <!-- Leer imagenes de la galeria -->
+
 
     <!-- Declarar que la cámara es opcional -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
@@ -24,6 +27,17 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.LevelUPGamer">
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
 
         <activity
             android:name=".MainActivity"
