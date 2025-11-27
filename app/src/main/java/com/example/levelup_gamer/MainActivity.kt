@@ -16,7 +16,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.levelup_gamer.ui.theme.LevelUPGamerTheme
 
 import android.os.Handler
 import android.os.Looper
@@ -24,7 +23,7 @@ import android.window.SplashScreen
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
-import com.example.levelup_gamer.navegation.AppNavegacion
+import com.example.levelup_gamer.navigation.AppNavegacion
 import com.example.levelup_gamer.ui.screens.login.LoginScreen
 import com.example.levelup_gamer.ui.screens.splash.SplashSplash
 class MainActivity : ComponentActivity() {
@@ -39,22 +38,20 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MyApp() {
-    var showLogin by rememberSaveable{ mutableStateOf(false) }
+    var showLogin by rememberSaveable { mutableStateOf(false) }
 
-    val handler = remember { Handler(Looper.getMainLooper()) }
     LaunchedEffect(Unit) {
-        handler.postDelayed({showLogin = true}, 2000L)
+        kotlinx.coroutines.delay(2000)
+        showLogin = true
     }
 
-    MaterialTheme{
+    MaterialTheme {
         Surface {
             if (!showLogin) {
                 SplashSplash()
             } else {
                 AppNavegacion()
-
             }
         }
     }
-
 }

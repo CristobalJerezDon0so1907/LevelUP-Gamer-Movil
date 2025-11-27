@@ -11,7 +11,6 @@ data class ResultadoProductos(
 )
 
 class ProductoRepository {
-
     private val db = FirebaseFirestore.getInstance()
 
     suspend fun obtenerProductos(limite: Int = 10): ResultadoProductos {
@@ -22,32 +21,31 @@ class ProductoRepository {
                 .limit(limite.toLong())
 
             val querySnapshot = query.get().await()
-
             val productos = querySnapshot.documents.map { document ->
                 Producto(
+                    id = document.id,
                     nombre = document.getString("nombre") ?: "",
-                    precio = document.getDouble("precio") ?: 0.0,
                     descripcion = document.getString("descripcion") ?: "",
-                    imagenUrl = document.getString("imagen") ?: "",
+                    precio = document.getDouble("precio") ?: 0.0,
+                    imagenUrl = document.getString("imagenUrl") ?: "",
                     stock = document.getLong("stock")?.toInt() ?: 0
                 )
             }
 
             val ultimoDocumento = if (querySnapshot.documents.isNotEmpty()) {
                 querySnapshot.documents.last()
-            } else null
+            } else {
+                null
+            }
 
             ResultadoProductos(productos, ultimoDocumento)
-
         } catch (e: Exception) {
             ResultadoProductos(emptyList(), null)
         }
     }
 
-
     suspend fun obtenerMasProductos(limite: Int = 10, ultimoDocumento: Any?): ResultadoProductos {
         return try {
-
             if (ultimoDocumento == null) return ResultadoProductos(emptyList(), null)
 
             val query = db.collection("producto")
@@ -57,30 +55,30 @@ class ProductoRepository {
                 .limit(limite.toLong())
 
             val querySnapshot = query.get().await()
-
             val productos = querySnapshot.documents.map { document ->
                 Producto(
+                    id = document.id,
                     nombre = document.getString("nombre") ?: "",
-                    precio = document.getDouble("precio") ?: 0.0,
                     descripcion = document.getString("descripcion") ?: "",
-                    imagenUrl = document.getString("imagen") ?: "",
+                    precio = document.getDouble("precio") ?: 0.0,
+                    imagenUrl = document.getString("imagenUrl") ?: "",
                     stock = document.getLong("stock")?.toInt() ?: 0
                 )
             }
 
             val nuevoUltimoDocumento = if (querySnapshot.documents.isNotEmpty()) {
                 querySnapshot.documents.last()
-            } else null
+            } else {
+                null
+            }
 
             ResultadoProductos(productos, nuevoUltimoDocumento)
-
         } catch (e: Exception) {
             ResultadoProductos(emptyList(), null)
         }
     }
 
-
-    //Actualizar stock de firestore
+    // Actualizar stock en Firestore
     suspend fun actualizarStock(productoId: String, nuevoStock: Int): Boolean {
         return try {
             db.collection("producto")
@@ -93,20 +91,22 @@ class ProductoRepository {
         }
     }
 
-
-    //Obtener producto por ID
+    // Obtener producto por ID
     suspend fun obtenerProductoPorId(productoId: String): Producto? {
         return try {
             val document = db.collection("producto").document(productoId).get().await()
             if (document.exists()) {
                 Producto(
+                    id = document.id,
                     nombre = document.getString("nombre") ?: "",
-                    precio = document.getDouble("precio") ?: 0.0,
                     descripcion = document.getString("descripcion") ?: "",
-                    imagenUrl = document.getString("imagen") ?: "",
+                    precio = document.getDouble("precio") ?: 0.0,
+                    imagenUrl = document.getString("imagenUrl") ?: "",
                     stock = document.getLong("stock")?.toInt() ?: 0
                 )
-            } else null
+            } else {
+                null
+            }
         } catch (e: Exception) {
             null
         }

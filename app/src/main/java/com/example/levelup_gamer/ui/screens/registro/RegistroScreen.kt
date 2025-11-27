@@ -1,123 +1,146 @@
 package com.example.levelup_gamer.ui.screens.registro
 
-import android.widget.Toast // Mensajes emergentes
-import androidx.compose.foundation.layout.* // Organizar los elementos en una vista
-import androidx.compose.material3.* // Elementos para diseñar UI
-import androidx.compose.runtime.* // Manejar los estados de la app
-import androidx.compose.ui.Alignment // Alinear los elementos
-import androidx.compose.ui.Modifier // Modificar el diseño visual de los elemento
-import androidx.compose.ui.platform.LocalContext // Obtener el contexto para mostrar mensajes
-import androidx.compose.ui.text.input.PasswordVisualTransformation // Ocultar la contraseña al escribirla
-import androidx.compose.ui.unit.dp // Controlar el tamaño de los elementos
+import android.widget.Toast
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import com.example.levelup_gamer.viewmodel.RegistroViewModel
 
 @Composable
 fun RegistroScreen(
-    navController: NavController,
-    registroViewModel: RegistroViewModel = viewModel()
+    onBack: () -> Unit,
+    onRegisterSuccess: () -> Unit
 ) {
     val context = LocalContext.current
-
-    val cargando by registroViewModel.cargando.collectAsState()
-    val registroExitoso by registroViewModel.registroExitoso.collectAsState()
-    val errorMensaje by registroViewModel.errorMensaje.collectAsState()
-
     var correo by remember { mutableStateOf("") }
     var clave by remember { mutableStateOf("") }
     var confirmarClave by remember { mutableStateOf("") }
     var nombre by remember { mutableStateOf("") }
 
-    // Cuando el registro sea exitoso
+    val viewModel: com.example.levelup_gamer.viewmodel.RegistroViewModel = viewModel()
+    val cargando by viewModel.cargando.collectAsState()
+    val registroExitoso by viewModel.registroExitoso.collectAsState()
+    val errorMensaje by viewModel.errorMensaje.collectAsState()
+
+    // Observar éxito del registro
     LaunchedEffect(registroExitoso) {
         if (registroExitoso) {
             Toast.makeText(context, "Registro exitoso", Toast.LENGTH_SHORT).show()
-            registroViewModel.limpiarRegistro()
-
-            // Navegar al login y limpiar el back stack
-            navController.navigate("login") {
-                popUpTo("login") { inclusive = true }
-            }
+            onRegisterSuccess()
         }
     }
 
-    // Mostrar mensajes de error
+    // Observar errores
     LaunchedEffect(errorMensaje) {
         if (errorMensaje.isNotEmpty()) {
-            Toast.makeText(context, errorMensaje, Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, errorMensaje, Toast.LENGTH_LONG).show()
         }
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState())
     ) {
-        // TÍTULO REGISTRO
-        Text(
-            text = "REGISTRO",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
+        // Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(onClick = onBack) {
+                Text("← Volver")
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                "Registrarse",
+                style = MaterialTheme.typography.headlineSmall,
+                color = Color(0xFF4CAF50)
+            )
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // Campos del formulario
         OutlinedTextField(
             value = nombre,
             onValueChange = { nombre = it },
-            label = { Text("Nombre") },
+            label = { Text("Nombre completo *") },
+            singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             value = correo,
             onValueChange = { correo = it },
-            label = { Text("Correo") },
+            label = { Text("Correo electrónico *") },
+            singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             value = clave,
             onValueChange = { clave = it },
-            label = { Text("Contraseña") },
+            label = { Text("Contraseña *") },
+            singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             value = confirmarClave,
             onValueChange = { confirmarClave = it },
-            label = { Text("Confirmar contraseña") },
+            label = { Text("Confirmar contraseña *") },
+            singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = {
-                registroViewModel.registroUsuario(
-                    correo = correo,
-                    clave = clave,
-                    confirmarClave = confirmarClave,
-                    nombre = nombre
-                )
+                viewModel.registroUsuario(correo, clave, confirmarClave, nombre)
             },
-            enabled = !cargando,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF2196F3),
+                contentColor = Color.White
+            ),
+            enabled = !cargando
         ) {
-            Text(if (cargando) "Registrando..." else "Registrarse")
+            if (cargando) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = Color.White
+                )
+            } else {
+                Text("Registrarse", style = MaterialTheme.typography.bodyLarge)
+            }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        TextButton(
-            onClick = { navController.navigate("login") }
-        ) {
-            Text("¿Ya tienes cuenta? Inicia sesión")
-        }
+        Text(
+            "* Campos obligatorios",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Gray
+        )
     }
 }

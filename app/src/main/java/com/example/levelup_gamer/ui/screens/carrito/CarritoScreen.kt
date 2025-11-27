@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
-import com.example.levelup_gamer.model.ItemCarrito
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.levelup_gamer.viewmodel.CarritoViewModel
 
 @Composable
@@ -30,6 +30,7 @@ fun CarritoScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
+        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -51,7 +52,9 @@ fun CarritoScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Icon(
                         Icons.Default.ShoppingCart,
                         contentDescription = "Carrito vacío",
@@ -67,12 +70,13 @@ fun CarritoScreen(
                 }
             }
         } else {
+            // Lista de productos en el carrito
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(carrito, key = { it.producto.id }) { item ->
-                    ItemCarritoView(
+                    ItemCarrito(
                         item = item,
                         onEliminar = { viewModel.eliminarProductoDelCarrito(item.producto) }
                     )
@@ -81,16 +85,22 @@ fun CarritoScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Resumen y botones
             Card(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    // Información del pedido
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Productos:", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "Productos:",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                         Text(
                             carrito.sumOf { it.cantidad }.toString(),
                             style = MaterialTheme.typography.bodyMedium,
@@ -104,7 +114,11 @@ fun CarritoScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Total:", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text(
+                            "Total:",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
                         Text(
                             "$${String.format("%.2f", total)}",
                             style = MaterialTheme.typography.headlineSmall,
@@ -115,10 +129,12 @@ fun CarritoScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    // Botones de acción
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        // Botón vaciar carrito
                         OutlinedButton(
                             onClick = { viewModel.vaciarCarrito() },
                             modifier = Modifier.weight(1f),
@@ -126,11 +142,16 @@ fun CarritoScreen(
                                 contentColor = Color.Red
                             )
                         ) {
-                            Icon(Icons.Default.Delete, contentDescription = "Vaciar carrito", modifier = Modifier.size(20.dp))
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Vaciar carrito",
+                                modifier = Modifier.size(20.dp)
+                            )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("Vaciar Todo")
                         }
 
+                        // Botón confirmar compra
                         Button(
                             onClick = {
                                 viewModel.confirmarCompra()
@@ -151,8 +172,8 @@ fun CarritoScreen(
 }
 
 @Composable
-fun ItemCarritoView(
-    item: ItemCarrito,
+fun ItemCarrito(
+    item: com.example.levelup_gamer.model.ItemCarrito,
     onEliminar: () -> Unit
 ) {
     Card(
@@ -199,6 +220,7 @@ fun ItemCarritoView(
                 )
             }
 
+            // Botón eliminar producto
             IconButton(
                 onClick = onEliminar,
                 modifier = Modifier.size(48.dp)
