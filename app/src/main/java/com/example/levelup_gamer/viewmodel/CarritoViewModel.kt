@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class CarritoViewModel : ViewModel() {
+
     private val repository = ProductoRepository()
 
     private val _productos = MutableStateFlow<List<Producto>>(emptyList())
@@ -20,6 +21,14 @@ class CarritoViewModel : ViewModel() {
 
     private val _cargando = MutableStateFlow(false)
     val cargando: StateFlow<Boolean> = _cargando
+
+    // 🔔 NUEVO → Notificaciones generales
+    private val _notificacion = MutableStateFlow<String?>(null)
+    val notificacion: StateFlow<String?> = _notificacion
+
+    private fun enviarNotificacion(msg: String) {
+        _notificacion.value = msg
+    }
 
     private var ultimoDocumento: Any? = null
     private val limiteProductos = 10
@@ -36,7 +45,7 @@ class CarritoViewModel : ViewModel() {
                 _productos.value = resultado.productos
                 ultimoDocumento = resultado.ultimoDocumento
             } catch (e: Exception) {
-                // Manejar error
+                enviarNotificacion("Error al cargar productos")
             } finally {
                 _cargando.value = false
             }
@@ -53,12 +62,13 @@ class CarritoViewModel : ViewModel() {
                     limite = limiteProductos,
                     ultimoDocumento = ultimoDocumento
                 )
+
                 if (resultado.productos.isNotEmpty()) {
                     _productos.value = _productos.value + resultado.productos
                     ultimoDocumento = resultado.ultimoDocumento
                 }
             } catch (e: Exception) {
-                // Manejar error
+                enviarNotificacion("No se pudieron cargar más productos")
             } finally {
                 _cargando.value = false
             }
@@ -68,31 +78,37 @@ class CarritoViewModel : ViewModel() {
     fun agregarAlCarrito(producto: Producto) {
         viewModelScope.launch {
             try {
-                // Verificar stock actualizado
                 val productoActualizado = repository.obtenerProductoPorId(producto.id)
-                if (productoActualizado == null || productoActualizado.stock <= 0) return@launch
+                if (productoActualizado == null || productoActualizado.stock <= 0) {
+                    enviarNotificacion("Sin stock disponible")
+                    return@launch
+                }
 
                 val carritoActual = _carrito.value.toMutableList()
                 val itemExistente = carritoActual.find { it.producto.id == producto.id }
 
-                // Verificar stock disponible
-                val stockDisponible = productoActualizado.stock - (itemExistente?.cantidad ?: 0)
-                if (stockDisponible <= 0) return@launch
+                val stockDisponible =
+                    productoActualizado.stock - (itemExistente?.cantidad ?: 0)
+                if (stockDisponible <= 0) {
+                    enviarNotificacion("No quedan unidades disponibles")
+                    return@launch
+                }
 
                 if (itemExistente != null) {
                     itemExistente.cantidad++
-                    // Actualizar stock en Firestore
-                    repository.actualizarStock(producto.id, productoActualizado.stock - 1)
                 } else {
-                    carritoActual.add(ItemCarrito(producto = productoActualizado, cantidad = 1))
-                    // Actualizar stock en Firestore
-                    repository.actualizarStock(producto.id, productoActualizado.stock - 1)
+                    carritoActual.add(ItemCarrito(productoActualizado, 1))
                 }
+
+                repository.actualizarStock(producto.id, productoActualizado.stock - 1)
 
                 _carrito.value = carritoActual
                 actualizarProductosEnCatalogo()
+
+                enviarNotificacion("Producto agregado al carrito")
+
             } catch (e: Exception) {
-                // Manejar error
+                enviarNotificacion("Error al agregar al carrito")
             }
         }
     }
@@ -101,30 +117,32 @@ class CarritoViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val carritoActual = _carrito.value.toMutableList()
-                val itemExistente = carritoActual.find { it.producto.id == producto.id }
+                val item = carritoActual.find { it.producto.id == producto.id }
 
-                if (itemExistente != null) {
-                    if (itemExistente.cantidad > 1) {
-                        itemExistente.cantidad--
-                        // Aumentar stock en Firestore
-                        val productoActualizado = repository.obtenerProductoPorId(producto.id)
-                        if (productoActualizado != null) {
-                            repository.actualizarStock(producto.id, productoActualizado.stock + 1)
-                        }
-                    } else {
-                        carritoActual.remove(itemExistente)
-                        // Aumentar stock en Firestore
-                        val productoActualizado = repository.obtenerProductoPorId(producto.id)
-                        if (productoActualizado != null) {
-                            repository.actualizarStock(producto.id, productoActualizado.stock + 1)
-                        }
+                if (item != null) {
+                    val productoActualizado = repository.obtenerProductoPorId(producto.id)
+
+                    if (productoActualizado != null) {
+                        repository.actualizarStock(
+                            producto.id,
+                            productoActualizado.stock + 1
+                        )
                     }
+
+                    if (item.cantidad > 1) {
+                        item.cantidad--
+                        enviarNotificacion("Cantidad reducida")
+                    } else {
+                        carritoActual.remove(item)
+                        enviarNotificacion("Producto eliminado del carrito")
+                    }
+
+                    _carrito.value = carritoActual
+                    actualizarProductosEnCatalogo()
                 }
 
-                _carrito.value = carritoActual
-                actualizarProductosEnCatalogo()
             } catch (e: Exception) {
-                // Manejar error
+                enviarNotificacion("Error al remover producto")
             }
         }
     }
@@ -133,24 +151,29 @@ class CarritoViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val carritoActual = _carrito.value.toMutableList()
-                val itemExistente = carritoActual.find { it.producto.id == producto.id }
+                val item = carritoActual.find { it.producto.id == producto.id }
 
-                if (itemExistente != null) {
-                    carritoActual.remove(itemExistente)
-                    // Restaurar todo el stock en Firestore
+                if (item != null) {
                     val productoActualizado = repository.obtenerProductoPorId(producto.id)
+
                     if (productoActualizado != null) {
                         repository.actualizarStock(
                             producto.id,
-                            productoActualizado.stock + itemExistente.cantidad
+                            productoActualizado.stock + item.cantidad
                         )
                     }
+
+                    carritoActual.remove(item)
+                    _carrito.value = carritoActual
+
+                    actualizarProductosEnCatalogo()
+
+                    enviarNotificacion("Producto eliminado completamente")
+
                 }
 
-                _carrito.value = carritoActual
-                actualizarProductosEnCatalogo()
             } catch (e: Exception) {
-                // Manejar error
+                enviarNotificacion("Error al eliminar producto del carrito")
             }
         }
     }
@@ -158,9 +181,9 @@ class CarritoViewModel : ViewModel() {
     fun vaciarCarrito() {
         viewModelScope.launch {
             try {
-                // Restaurar stock de todos los productos en el carrito
                 _carrito.value.forEach { item ->
-                    val productoActualizado = repository.obtenerProductoPorId(item.producto.id)
+                    val productoActualizado =
+                        repository.obtenerProductoPorId(item.producto.id)
                     if (productoActualizado != null) {
                         repository.actualizarStock(
                             item.producto.id,
@@ -171,8 +194,11 @@ class CarritoViewModel : ViewModel() {
 
                 _carrito.value = emptyList()
                 actualizarProductosEnCatalogo()
+
+                enviarNotificacion("Carrito vaciado")
+
             } catch (e: Exception) {
-                // Manejar error
+                enviarNotificacion("Error al vaciar el carrito")
             }
         }
     }
@@ -180,20 +206,20 @@ class CarritoViewModel : ViewModel() {
     fun confirmarCompra() {
         viewModelScope.launch {
             try {
-                // Aquí puedes implementar la lógica de confirmación de compra
-                // Por ahora solo limpiamos el carrito
                 _carrito.value = emptyList()
-                // Recargar productos para actualizar stocks
                 cargarProductos()
+
+                enviarNotificacion("Compra confirmada 🎉")
+
             } catch (e: Exception) {
-                // Manejar error
+                enviarNotificacion("Error al confirmar la compra")
             }
         }
     }
 
     private suspend fun actualizarProductosEnCatalogo() {
-        // Recargar productos para reflejar cambios de stock
-        val resultado = repository.obtenerProductos(limite = _productos.value.size + limiteProductos)
+        val resultado =
+            repository.obtenerProductos(limite = _productos.value.size + limiteProductos)
         _productos.value = resultado.productos
         ultimoDocumento = resultado.ultimoDocumento
     }

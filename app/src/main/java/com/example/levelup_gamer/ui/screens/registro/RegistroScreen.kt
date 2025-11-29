@@ -13,6 +13,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.util.Patterns
+
 
 @Composable
 fun RegistroScreen(
@@ -20,17 +22,24 @@ fun RegistroScreen(
     onRegisterSuccess: () -> Unit
 ) {
     val context = LocalContext.current
+
     var correo by remember { mutableStateOf("") }
     var clave by remember { mutableStateOf("") }
     var confirmarClave by remember { mutableStateOf("") }
     var nombre by remember { mutableStateOf("") }
+
+    // ❗ Variables de error
+    var nombreError by remember { mutableStateOf<String?>(null) }
+    var correoError by remember { mutableStateOf<String?>(null) }
+    var claveError by remember { mutableStateOf<String?>(null) }
+    var confirmarClaveError by remember { mutableStateOf<String?>(null) }
 
     val viewModel: com.example.levelup_gamer.viewmodel.RegistroViewModel = viewModel()
     val cargando by viewModel.cargando.collectAsState()
     val registroExitoso by viewModel.registroExitoso.collectAsState()
     val errorMensaje by viewModel.errorMensaje.collectAsState()
 
-    // Observar éxito del registro
+    // ✔ Mensajes automáticos
     LaunchedEffect(registroExitoso) {
         if (registroExitoso) {
             Toast.makeText(context, "Registro exitoso", Toast.LENGTH_SHORT).show()
@@ -38,11 +47,43 @@ fun RegistroScreen(
         }
     }
 
-    // Observar errores
     LaunchedEffect(errorMensaje) {
         if (errorMensaje.isNotEmpty()) {
             Toast.makeText(context, errorMensaje, Toast.LENGTH_LONG).show()
         }
+    }
+
+    // ✔ Validación completa
+    fun validarCampos(): Boolean {
+        nombreError = when {
+            nombre.isBlank() -> "El nombre es obligatorio"
+            nombre.length < 3 -> "Debe tener al menos 3 caracteres"
+            else -> null
+        }
+
+        correoError = when {
+            correo.isBlank() -> "El correo es obligatorio"
+            !android.util.Patterns.EMAIL_ADDRESS.matcher(correo).matches() ->
+                "Formato de correo inválido"
+            else -> null
+        }
+
+        claveError = when {
+            clave.isBlank() -> "La contraseña es obligatoria"
+            clave.length < 6 -> "Debe tener mínimo 6 caracteres"
+            else -> null
+        }
+
+        confirmarClaveError = when {
+            confirmarClave.isBlank() -> "Debe confirmar la contraseña"
+            confirmarClave != clave -> "Las contraseñas no coinciden"
+            else -> null
+        }
+
+        return nombreError == null &&
+                correoError == null &&
+                claveError == null &&
+                confirmarClaveError == null
     }
 
     Column(
@@ -51,7 +92,6 @@ fun RegistroScreen(
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -69,61 +109,109 @@ fun RegistroScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Campos del formulario
+        // =========================
+        // NOMBRE
+        // =========================
         OutlinedTextField(
             value = nombre,
-            onValueChange = { nombre = it },
+            onValueChange = {
+                nombre = it
+                validarCampos()
+            },
             label = { Text("Nombre completo *") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = nombreError != null
         )
+
+        if (nombreError != null) {
+            Text(nombreError!!, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // =========================
+        // CORREO
+        // =========================
         OutlinedTextField(
             value = correo,
-            onValueChange = { correo = it },
+            onValueChange = {
+                correo = it
+                validarCampos()
+            },
             label = { Text("Correo electrónico *") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = correoError != null
         )
+
+        if (correoError != null) {
+            Text(correoError!!, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // =========================
+        // CONTRASEÑA
+        // =========================
         OutlinedTextField(
             value = clave,
-            onValueChange = { clave = it },
+            onValueChange = {
+                clave = it
+                validarCampos()
+            },
             label = { Text("Contraseña *") },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = claveError != null
         )
+
+        if (claveError != null) {
+            Text(claveError!!, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // =========================
+        // CONFIRMAR CONTRASEÑA
+        // =========================
         OutlinedTextField(
             value = confirmarClave,
-            onValueChange = { confirmarClave = it },
+            onValueChange = {
+                confirmarClave = it
+                validarCampos()
+            },
             label = { Text("Confirmar contraseña *") },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = confirmarClaveError != null
         )
+
+        if (confirmarClaveError != null) {
+            Text(confirmarClaveError!!, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // =========================
+        // BOTÓN REGISTRO
+        // =========================
         Button(
             onClick = {
-                viewModel.registroUsuario(correo, clave, confirmarClave, nombre)
+                if (validarCampos()) {
+                    viewModel.registroUsuario(correo, clave, confirmarClave, nombre)
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
+            enabled = !cargando && validarCampos(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFF2196F3),
                 contentColor = Color.White
-            ),
-            enabled = !cargando
+            )
         ) {
             if (cargando) {
                 CircularProgressIndicator(

@@ -1,16 +1,13 @@
 package com.example.levelup_gamer.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.levelup_gamer.model.Resena
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import com.google.firebase.firestore.Query
-
 
 class ResenasViewModel : ViewModel() {
 
@@ -19,8 +16,13 @@ class ResenasViewModel : ViewModel() {
     private val _resenas = MutableStateFlow<List<Resena>>(emptyList())
     val resenas: StateFlow<List<Resena>> = _resenas
 
-    // Cargar reseñas de un producto (o todas si productId es null)
+    /**
+     * Cargar reseñas.
+     * Si productId es null → carga todas.
+     * Si tiene valor → filtra por producto.
+     */
     fun cargarResenas(productId: String? = null) {
+
         val baseCollection = db.collection("resenas")
 
         val query: Query = if (productId.isNullOrBlank()) {
@@ -30,7 +32,7 @@ class ResenasViewModel : ViewModel() {
         }
 
         query
-            .orderBy("timestamp")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) return@addSnapshotListener
 
@@ -38,7 +40,8 @@ class ResenasViewModel : ViewModel() {
                     Resena(
                         id = doc.id,
                         producto = doc.getString("producto")
-                            ?: doc.getString("juego") ?: "",
+                            ?: doc.getString("juego")
+                            ?: "",
                         productId = doc.getString("productId") ?: "",
                         comment = doc.getString("comment") ?: "",
                         rating = doc.getLong("rating")?.toInt() ?: 0,
@@ -54,7 +57,9 @@ class ResenasViewModel : ViewModel() {
             }
     }
 
-
+    /**
+     * Agregar reseña a Firestore.
+     */
     fun agregarResena(
         productoNombre: String,
         productId: String,
