@@ -2,26 +2,17 @@ package com.example.levelup_gamer.repository
 
 import com.example.levelup_gamer.model.Producto
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
-
-data class ResultadoProductos(
-    val productos: List<Producto>,
-    val ultimoDocumento: Any?
-)
 
 class ProductoRepository {
     private val db = FirebaseFirestore.getInstance()
 
-    suspend fun obtenerProductos(limite: Int = 10): ResultadoProductos {
+    // Obtener todos los productos sin límites
+    suspend fun obtenerProductos(): List<Producto> {
         return try {
-            val query = db.collection("producto")
-                .whereGreaterThan("stock", 0)
-                .orderBy("stock", Query.Direction.DESCENDING)
-                .limit(limite.toLong())
+            val snapshot = db.collection("producto").get().await()
 
-            val querySnapshot = query.get().await()
-            val productos = querySnapshot.documents.map { document ->
+            snapshot.documents.map { document ->
                 Producto(
                     id = document.id,
                     nombre = document.getString("nombre") ?: "",
@@ -31,54 +22,51 @@ class ProductoRepository {
                     stock = document.getLong("stock")?.toInt() ?: 0
                 )
             }
-
-            val ultimoDocumento = if (querySnapshot.documents.isNotEmpty()) {
-                querySnapshot.documents.last()
-            } else {
-                null
-            }
-
-            ResultadoProductos(productos, ultimoDocumento)
         } catch (e: Exception) {
-            ResultadoProductos(emptyList(), null)
+            emptyList()
         }
     }
 
-    suspend fun obtenerMasProductos(limite: Int = 10, ultimoDocumento: Any?): ResultadoProductos {
+    // Crear un producto
+    suspend fun crearProducto(producto: Producto): Boolean {
         return try {
-            if (ultimoDocumento == null) return ResultadoProductos(emptyList(), null)
-
-            val query = db.collection("producto")
-                .whereGreaterThan("stock", 0)
-                .orderBy("stock", Query.Direction.DESCENDING)
-                .startAfter(ultimoDocumento)
-                .limit(limite.toLong())
-
-            val querySnapshot = query.get().await()
-            val productos = querySnapshot.documents.map { document ->
-                Producto(
-                    id = document.id,
-                    nombre = document.getString("nombre") ?: "",
-                    descripcion = document.getString("descripcion") ?: "",
-                    precio = document.getDouble("precio") ?: 0.0,
-                    imagenUrl = document.getString("imagenUrl") ?: "",
-                    stock = document.getLong("stock")?.toInt() ?: 0
-                )
-            }
-
-            val nuevoUltimoDocumento = if (querySnapshot.documents.isNotEmpty()) {
-                querySnapshot.documents.last()
-            } else {
-                null
-            }
-
-            ResultadoProductos(productos, nuevoUltimoDocumento)
+            db.collection("producto")
+                .document() // genera ID automático
+                .set(producto)
+                .await()
+            true
         } catch (e: Exception) {
-            ResultadoProductos(emptyList(), null)
+            false
         }
     }
 
-    // Actualizar stock en Firestore
+    // Actualizar un producto completo
+    suspend fun actualizarProducto(id: String, producto: Producto): Boolean {
+        return try {
+            db.collection("producto")
+                .document(id)
+                .set(producto)
+                .await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    // Eliminar un producto
+    suspend fun eliminarProducto(id: String): Boolean {
+        return try {
+            db.collection("producto")
+                .document(id)
+                .delete()
+                .await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    // Actualizar solo el stock
     suspend fun actualizarStock(productoId: String, nuevoStock: Int): Boolean {
         return try {
             db.collection("producto")
@@ -94,7 +82,11 @@ class ProductoRepository {
     // Obtener producto por ID
     suspend fun obtenerProductoPorId(productoId: String): Producto? {
         return try {
-            val document = db.collection("producto").document(productoId).get().await()
+            val document = db.collection("producto")
+                .document(productoId)
+                .get()
+                .await()
+
             if (document.exists()) {
                 Producto(
                     id = document.id,
@@ -104,9 +96,7 @@ class ProductoRepository {
                     imagenUrl = document.getString("imagenUrl") ?: "",
                     stock = document.getLong("stock")?.toInt() ?: 0
                 )
-            } else {
-                null
-            }
+            } else null
         } catch (e: Exception) {
             null
         }

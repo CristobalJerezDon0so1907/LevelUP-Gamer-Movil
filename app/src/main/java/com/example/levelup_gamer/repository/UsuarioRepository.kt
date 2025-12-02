@@ -1,44 +1,74 @@
 package com.example.levelup_gamer.repository
 
+import com.example.levelup_gamer.model.Usuario
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
-import java.text.SimpleDateFormat
-import java.util.*
 
 class UsuarioRepository {
+
     private val db = FirebaseFirestore.getInstance()
 
-    suspend fun registroUsuario(correo: String, clave: String, nombre: String): Boolean {
+    // Obtener todos los usuarios
+    suspend fun obtenerTodosLosUsuarios(): List<Usuario> {
         return try {
-            // Verificar si el correo ya existe
-            val querySnapshot = db.collection("usuario")
-                .whereEqualTo("correo", correo)
-                .get()
-                .await()
+            val snapshot = db.collection("usuario").get().await()
 
-            if (!querySnapshot.isEmpty) {
-                return false // El correo ya está registrado
+            snapshot.documents.map { doc ->
+                Usuario(
+                    correo = doc.getString("correo") ?: "",
+                    clave = doc.getString("clave") ?: "",
+                    nombre = doc.getString("nombre") ?: "",
+                    rol = doc.getString("rol") ?: "",
+                    fechaRegistro = doc.getString("fechaRegistro") ?: ""
+                )
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    // Crear usuario usando el correo como ID
+    suspend fun crearUsuario(usuario: Usuario): Boolean {
+        return try {
+            val docRef = db.collection("usuario").document(usuario.correo)
+
+            // Revisar si ya existe
+            if (docRef.get().await().exists()) {
+                return false
             }
 
-            // Crear nuevo usuario solo en Firestore
-            val userData = hashMapOf(
-                "correo" to correo,
-                "clave" to clave,
-                "nombre" to nombre,
-                "rol" to "cliente",
-                "fechaRegistro" to getCurrentDate()
-            )
-
-            // Agregar documento a la colección "usuario"
-            db.collection("usuario").add(userData).await()
+            docRef.set(usuario).await()
             true
         } catch (e: Exception) {
             false
         }
     }
 
-    private fun getCurrentDate(): String {
-        val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
-        return sdf.format(Date())
+    // Actualizar usuario por correo (correo es el ID del doc)
+    suspend fun actualizarUsuario(correo: String, usuario: Usuario): Boolean {
+        return try {
+            db.collection("usuario")
+                .document(correo)
+                .set(usuario)
+                .await()
+
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    // Eliminar usuario
+    suspend fun eliminarUsuario(correo: String): Boolean {
+        return try {
+            db.collection("usuario")
+                .document(correo)
+                .delete()
+                .await()
+
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 }

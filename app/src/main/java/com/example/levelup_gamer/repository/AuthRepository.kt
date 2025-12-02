@@ -20,7 +20,7 @@ class AuthRepository {
                     Usuario(
                         correo = correo,
                         nombre = "Administrador",
-                        rol = "admin"
+                        rol = "admin",
                     )
                 }
                 else -> {
@@ -49,7 +49,7 @@ class AuthRepository {
                     correo = doc.getString("correo") ?: "",
                     clave = doc.getString("clave") ?: "",
                     nombre = doc.getString("nombre") ?: "Cliente",
-                    rol = doc.getString("rol") ?: "cliente"
+                    rol = doc.getString("rol") ?: "cliente",
                 )
             } else null
         } catch (e: Exception) {
