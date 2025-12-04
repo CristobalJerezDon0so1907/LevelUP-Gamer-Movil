@@ -12,6 +12,11 @@ android {
     namespace = "com.example.levelup_gamer"
     compileSdk = 36
 
+    testOptions {
+        unitTests.all {it.useJUnitPlatform() // Le dice a Gradle que use JUnit Platform (necesario para Kotest)
+        }
+    }
+
     defaultConfig {
         applicationId = "com.example.levelup_gamer"
         minSdk = 24
@@ -98,7 +103,8 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 
-    // Testing
+
+    //testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
     testImplementation("io.kotest:kotest-runner-junit5:5.5.5")
@@ -109,7 +115,7 @@ dependencies {
 
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.5.0")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.0")
 
 
 
