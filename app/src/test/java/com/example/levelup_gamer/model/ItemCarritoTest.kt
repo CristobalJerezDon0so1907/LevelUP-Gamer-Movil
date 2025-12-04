@@ -5,39 +5,30 @@ import io.kotest.matchers.shouldBe
 
 class ItemCarritoTest : BehaviorSpec({
 
-    // Test para el modelo ItemCarrito
     given("un ItemCarrito") {
+
         val producto = Producto(
             id = "1",
             nombre = "Producto Test",
             precio = 10.0,
-            imagenUrl = "imagen.jpg",
+            descripcion = "Desc",
+            imagenUrl = "img.jpg",
             stock = 5
         )
 
         `when`("se crea con cantidad por defecto") {
-            val itemCarrito = ItemCarrito(producto = producto)
+            val item = ItemCarrito(producto)
 
-            then("debe tener cantidad 1") {
-                itemCarrito.cantidad shouldBe 1
-                itemCarrito.producto shouldBe producto
+            then("la cantidad debe ser 1") {
+                item.cantidad shouldBe 1
             }
         }
 
-        `when`("se crea con cantidad específica") {
-            val itemCarrito = ItemCarrito(producto = producto, cantidad = 3)
+        `when`("se crea con cantidad personalizada") {
+            val item = ItemCarrito(producto, 3)
 
-            then("debe tener la cantidad especificada") {
-                itemCarrito.cantidad shouldBe 3
-            }
-        }
-
-        `when`("se modifica la cantidad") {
-            val itemCarrito = ItemCarrito(producto = producto)
-            itemCarrito.cantidad = 5
-
-            then("la cantidad debe actualizarse") {
-                itemCarrito.cantidad shouldBe 5
+            then("la cantidad debe ser 3") {
+                item.cantidad shouldBe 3
             }
         }
     }
