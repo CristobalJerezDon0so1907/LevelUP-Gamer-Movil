@@ -9,6 +9,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,12 +29,16 @@ import java.io.File
 @Composable
 fun PerfilAdminScreen(
     nombre: String = "Administrador",
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onGestionProductos: () -> Unit = {},
+    onGestionUsuarios: () -> Unit = {},
+    onGestionPedidos: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
     var fotoUriString by remember { mutableStateOf<String?>(null) }
     var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
+
 
     LaunchedEffect(Unit) {
         val db = FirebaseFirestore.getInstance()
@@ -46,6 +53,7 @@ fun PerfilAdminScreen(
             }
     }
 
+    //Galeria
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -59,8 +67,6 @@ fun PerfilAdminScreen(
             }
         }
     }
-
-
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -77,8 +83,6 @@ fun PerfilAdminScreen(
         }
     }
 
-
-    //Permisos para utilizar la camara
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -87,7 +91,6 @@ fun PerfilAdminScreen(
             tempCameraUri = uri
             cameraLauncher.launch(uri)
         } else {
-            // Aquí podrías mostrar un snackbar/mensaje si quieres
         }
     }
 
@@ -96,7 +99,7 @@ fun PerfilAdminScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Perfil administrador") },
+                title = { Text("Panel administrador") },
                 actions = {
                     TextButton(onClick = onLogout) {
                         Text("Cerrar sesión")
@@ -156,21 +159,90 @@ fun PerfilAdminScreen(
                     Text("Tomar foto")
                 }
 
-                //Galeria
                 FilledTonalButton(
                     onClick = {
                         galleryLauncher.launch("image/*")
                     }
                 ) {
-                    Text("Elegir de galeria")
+                    Icon(Icons.Default.Photo, contentDescription = "Galería")
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Galería")
                 }
+            }
 
+            Spacer(modifier = Modifier.height(32.dp))
+
+
+            //Panel de admin
+            Text(
+                text = "Panel de gestión",
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            //Gestion de productos
+            FilledTonalButton(
+                onClick = onGestionProductos,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ShoppingCart,
+                    contentDescription = "Gestión de productos"
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Gestión de productos")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            //Gestion de usuarios
+            FilledTonalButton(
+                onClick = onGestionUsuarios,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Group,
+                    contentDescription = "Gestión de usuarios"
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Gestión de usuarios")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            //Gestion de pedidos
+            FilledTonalButton(
+                onClick = onGestionPedidos,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiary
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ListAlt,
+                    contentDescription = "Gestión de pedidos"
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Gestión de pedidos")
             }
         }
     }
 }
 
-//Guarda la imagen como archivo temporal
+//Guarda la imagen
 fun crearFotoUri(context: Context): Uri {
     val imagen = File(context.cacheDir, "temp_foto_admin.jpg")
     return FileProvider.getUriForFile(

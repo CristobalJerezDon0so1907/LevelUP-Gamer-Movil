@@ -121,7 +121,6 @@ fun GestionProductosScreen(
                                 }
                                 IconButton(
                                     onClick = {
-                                        // Mostrar diálogo de confirmación
                                         viewModel.eliminarProducto(producto.id)
                                     }
                                 ) {
@@ -131,6 +130,7 @@ fun GestionProductosScreen(
                                         tint = Color.Red
                                     )
                                 }
+
                             }
                         }
                     }

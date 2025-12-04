@@ -20,7 +20,6 @@ fun UsuarioFormScreen(
 ) {
     var nombre by remember { mutableStateOf(usuario?.nombre ?: "") }
     var correo by remember { mutableStateOf(usuario?.correo ?: "") }
-    var clave by remember { mutableStateOf(usuario?.clave ?: "") }
     var rol by remember { mutableStateOf(usuario?.rol ?: "cliente") }
 
     val cargando by viewModel.cargando.collectAsState()
@@ -30,7 +29,12 @@ fun UsuarioFormScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(if (usuario?.correo?.isNotEmpty() == true) "Editar Usuario" else "Nuevo Usuario")
+                    Text(
+                        if (usuario?.id?.isNotEmpty() == true)
+                            "Editar usuario"
+                        else
+                            "Nuevo usuario"
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -41,20 +45,16 @@ fun UsuarioFormScreen(
                     IconButton(
                         onClick = {
                             val usuarioActualizado = Usuario(
-                                correo = correo,
-                                clave = clave,
+                                id = usuario?.id ?: "",
                                 nombre = nombre,
-                                rol = rol,
+                                correo = correo,
+                                rol = rol
                             )
 
-                            if (usuario?.correo?.isNotEmpty() == true) {
-                                viewModel.actualizarUsuario(usuario.correo, usuarioActualizado)
-                            } else {
-                                viewModel.crearUsuario(usuarioActualizado)
-                            }
+                            viewModel.guardarUsuario(usuarioActualizado)
                             onBack()
                         },
-                        enabled = !cargando && nombre.isNotEmpty() && correo.isNotEmpty() && clave.isNotEmpty()
+                        enabled = !cargando && nombre.isNotBlank() && correo.isNotBlank()
                     ) {
                         Icon(Icons.Default.Save, contentDescription = "Guardar")
                     }
@@ -71,7 +71,7 @@ fun UsuarioFormScreen(
             OutlinedTextField(
                 value = nombre,
                 onValueChange = { nombre = it },
-                label = { Text("Nombre completo") },
+                label = { Text("Nombre") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -81,42 +81,20 @@ fun UsuarioFormScreen(
             OutlinedTextField(
                 value = correo,
                 onValueChange = { correo = it },
-                label = { Text("Correo electrónico") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                enabled = usuario?.correo?.isEmpty() != false // Solo editable si es nuevo usuario
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = clave,
-                onValueChange = { clave = it },
-                label = { Text("Contraseña") },
+                label = { Text("Correo") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Selector de rol
-            Text("Rol:", style = MaterialTheme.typography.labelMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
+            OutlinedTextField(
+                value = rol,
+                onValueChange = { rol = it },
+                label = { Text("Rol (admin / cliente)") },
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilterChip(
-                    selected = rol == "cliente",
-                    onClick = { rol = "cliente" },
-                    label = { Text("Cliente") }
-                )
-                FilterChip(
-                    selected = rol == "admin",
-                    onClick = { rol = "admin" },
-                    label = { Text("Administrador") }
-                )
-            }
+                singleLine = true
+            )
         }
     }
 }

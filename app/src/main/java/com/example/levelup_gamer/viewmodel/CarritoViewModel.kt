@@ -5,13 +5,16 @@ import androidx.lifecycle.viewModelScope
 import com.example.levelup_gamer.model.ItemCarrito
 import com.example.levelup_gamer.model.Producto
 import com.example.levelup_gamer.repository.ProductoRepository
+import com.example.levelup_gamer.services.FCMClient
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
-class CarritoViewModel : ViewModel() {
-
-    private val repository = ProductoRepository()
+class CarritoViewModel(
+    private val repository: ProductoRepository = ProductoRepository()
+) : ViewModel() {
 
     private val _productos = MutableStateFlow<List<Producto>>(emptyList())
     val productos: StateFlow<List<Producto>> = _productos
@@ -22,7 +25,7 @@ class CarritoViewModel : ViewModel() {
     private val _cargando = MutableStateFlow(false)
     val cargando: StateFlow<Boolean> = _cargando
 
-    // 🔔 NUEVO → Notificaciones generales
+    // Notificaciones generales (para Snackbar / Toast)
     private val _notificacion = MutableStateFlow<String?>(null)
     val notificacion: StateFlow<String?> = _notificacion
 
@@ -30,22 +33,22 @@ class CarritoViewModel : ViewModel() {
         _notificacion.value = msg
     }
 
-    private var ultimoDocumento: Any? = null
-    private val limiteProductos = 10
+    fun limpiarNotificacion() {
+        _notificacion.value = null
+    }
 
     init {
         cargarProductos()
     }
 
     fun cargarProductos() {
-        _cargando.value = true
         viewModelScope.launch {
+            _cargando.value = true
             try {
-                val resultado = repository.obtenerProductos(limite = limiteProductos)
-                _productos.value = resultado.productos
-                ultimoDocumento = resultado.ultimoDocumento
+                val lista = repository.obtenerProductos()
+                _productos.value = lista
             } catch (e: Exception) {
-                enviarNotificacion("Error al cargar productos")
+                _productos.value = emptyList()
             } finally {
                 _cargando.value = false
             }
@@ -58,15 +61,8 @@ class CarritoViewModel : ViewModel() {
         _cargando.value = true
         viewModelScope.launch {
             try {
-                val resultado = repository.obtenerMasProductos(
-                    limite = limiteProductos,
-                    ultimoDocumento = ultimoDocumento
-                )
-
-                if (resultado.productos.isNotEmpty()) {
-                    _productos.value = _productos.value + resultado.productos
-                    ultimoDocumento = resultado.ultimoDocumento
-                }
+                val lista = repository.obtenerProductos()
+                _productos.value = lista
             } catch (e: Exception) {
                 enviarNotificacion("No se pudieron cargar más productos")
             } finally {
@@ -169,7 +165,6 @@ class CarritoViewModel : ViewModel() {
                     actualizarProductosEnCatalogo()
 
                     enviarNotificacion("Producto eliminado completamente")
-
                 }
 
             } catch (e: Exception) {
@@ -203,12 +198,48 @@ class CarritoViewModel : ViewModel() {
         }
     }
 
-    fun confirmarCompra() {
+    fun confirmarCompra(correoUsuario: String) {
         viewModelScope.launch {
             try {
+                val db = FirebaseFirestore.getInstance()
+
+                //Calcular el total
+                val totalCompra = carrito.value.sumOf { it.producto.precio * it.cantidad }
+
+                //Buscar el usuario por el correo
+                val usuarioQuery = db.collection("usuario")
+                    .whereEqualTo("correo", correoUsuario)
+                    .limit(1)
+                    .get()
+                    .await()
+
+                val usuarioDoc = usuarioQuery.documents.firstOrNull()
+                val token = usuarioDoc?.getString("fcmToken")
+
+                //total
+                val pedido = hashMapOf(
+                    "correoUsuario" to correoUsuario,
+                    "estado" to "Pendiente",
+                    "fecha" to System.currentTimeMillis(),
+                    "total" to totalCompra
+                )
+
+                db.collection("pedidos").add(pedido).await()
+
+                //Enviar la notificacion solo si se aprobo
+                if (token != null) {
+                    FCMClient.enviarNotificacion(
+                        token,
+                        titulo = "¡Compra exitosa!",
+                        mensaje = "Tu pedido ha sido comprado con éxito. Total: $$totalCompra"
+                    )
+                }
+
+                //Vaciar el carrito
                 _carrito.value = emptyList()
                 cargarProductos()
 
+                //Notificacion en la app
                 enviarNotificacion("Compra confirmada 🎉")
 
             } catch (e: Exception) {
@@ -217,11 +248,14 @@ class CarritoViewModel : ViewModel() {
         }
     }
 
+
     private suspend fun actualizarProductosEnCatalogo() {
-        val resultado =
-            repository.obtenerProductos(limite = _productos.value.size + limiteProductos)
-        _productos.value = resultado.productos
-        ultimoDocumento = resultado.ultimoDocumento
+        try {
+            val productosFirebase = repository.obtenerProductos()
+            _productos.value = productosFirebase
+        } catch (e: Exception) {
+            enviarNotificacion("Error al actualizar el catálogo")
+        }
     }
 
     fun obtenerTotal(): Double {

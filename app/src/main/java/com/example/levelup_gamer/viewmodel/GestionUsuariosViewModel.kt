@@ -3,104 +3,120 @@ package com.example.levelup_gamer.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.levelup_gamer.model.Usuario
-import com.example.levelup_gamer.repository.UsuarioRepository
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class GestionUsuariosViewModel : ViewModel() {
-    private val usuarioRepository = UsuarioRepository()
+
+    private val db = FirebaseFirestore.getInstance()
 
     private val _usuarios = MutableStateFlow<List<Usuario>>(emptyList())
-    val usuarios: StateFlow<List<Usuario>> = _usuarios.asStateFlow()
+    val usuarios: StateFlow<List<Usuario>> = _usuarios
 
     private val _cargando = MutableStateFlow(false)
-    val cargando: StateFlow<Boolean> = _cargando.asStateFlow()
+    val cargando: StateFlow<Boolean> = _cargando
 
     private val _mensaje = MutableStateFlow<String?>(null)
-    val mensaje: StateFlow<String?> = _mensaje.asStateFlow()
+    val mensaje: StateFlow<String?> = _mensaje
 
-    fun cargarUsuarios() {
-        viewModelScope.launch {
-            _cargando.value = true
-            _mensaje.value = null
-
-            try {
-                val usuariosList = usuarioRepository.obtenerTodosLosUsuarios()
-                _usuarios.value = usuariosList
-            } catch (e: Exception) {
-                _mensaje.value = "Error al cargar usuarios: ${e.message}"
-            }
-
-            _cargando.value = false
-        }
-    }
-
-    fun crearUsuario(usuario: Usuario) {
-        viewModelScope.launch {
-            _cargando.value = true
-            _mensaje.value = null
-
-            try {
-                val resultado = usuarioRepository.crearUsuario(usuario)
-                if (resultado) {
-                    _mensaje.value = "Usuario creado exitosamente"
-                    cargarUsuarios() // Recargar la lista
-                } else {
-                    _mensaje.value = "Error al crear usuario: El correo ya existe"
-                }
-            } catch (e: Exception) {
-                _mensaje.value = "Error al crear usuario: ${e.message}"
-            }
-
-            _cargando.value = false
-        }
-    }
-
-    fun actualizarUsuario(correo: String, usuario: Usuario) {
-        viewModelScope.launch {
-            _cargando.value = true
-            _mensaje.value = null
-
-            try {
-                val resultado = usuarioRepository.actualizarUsuario(correo, usuario)
-                if (resultado) {
-                    _mensaje.value = "Usuario actualizado exitosamente"
-                    cargarUsuarios() // Recargar la lista
-                } else {
-                    _mensaje.value = "Error al actualizar usuario"
-                }
-            } catch (e: Exception) {
-                _mensaje.value = "Error al actualizar usuario: ${e.message}"
-            }
-
-            _cargando.value = false
-        }
-    }
-
-    fun eliminarUsuario(correo: String) {
-        viewModelScope.launch {
-            _cargando.value = true
-            _mensaje.value = null
-
-            try {
-                val resultado = usuarioRepository.eliminarUsuario(correo)
-                if (resultado) {
-                    _mensaje.value = "Usuario eliminado exitosamente"
-                    cargarUsuarios() // Recargar la lista
-                } else {
-                    _mensaje.value = "Error al eliminar usuario"
-                }
-            } catch (e: Exception) {
-                _mensaje.value = "Error al eliminar usuario: ${e.message}"
-            }
-
-            _cargando.value = false
-        }
-    }
+    private val _usuarioSeleccionado = MutableStateFlow<Usuario?>(null)
+    val usuarioSeleccionado: StateFlow<Usuario?> = _usuarioSeleccionado
 
     fun limpiarMensaje() {
         _mensaje.value = null
+    }
+
+    fun seleccionarUsuario(usuario: Usuario?) {
+        _usuarioSeleccionado.value = usuario
+    }
+
+    fun cargarUsuarios() {
+        _cargando.value = true
+
+        viewModelScope.launch {
+            db.collection("usuario")
+                .get()
+                .addOnSuccessListener { query ->
+                    val lista = query.documents.map { doc ->
+                        val nombre = doc.getString("nombre") ?: ""
+                        val correo = doc.getString("correo") ?: ""
+                        val rol = doc.getString("rol") ?: ""
+
+                        Usuario(
+                            id = doc.id,
+                            nombre = nombre,
+                            correo = correo,
+                            rol = rol
+                        )
+                    }
+
+                    _usuarios.value = lista
+                    _cargando.value = false
+                }
+                .addOnFailureListener {
+                    _cargando.value = false
+                    _mensaje.value = "Error al cargar usuarios"
+                }
+        }
+    }
+
+    fun eliminarUsuario(idUsuario: String) {
+        if (idUsuario.isBlank()) return
+
+        viewModelScope.launch {
+            db.collection("usuario")
+                .document(idUsuario)
+                .delete()
+                .addOnSuccessListener {
+                    _mensaje.value = "Usuario eliminado"
+                    cargarUsuarios()
+                }
+                .addOnFailureListener {
+                    _mensaje.value = "Error al eliminar usuario"
+                }
+        }
+    }
+
+    fun guardarUsuario(usuario: Usuario) {
+        viewModelScope.launch {
+            if (usuario.id.isBlank()) {
+                // Crear nuevo
+                db.collection("usuario")
+                    .add(
+                        mapOf(
+                            "nombre" to usuario.nombre,
+                            "correo" to usuario.correo,
+                            "rol" to usuario.rol
+                        )
+                    )
+                    .addOnSuccessListener {
+                        _mensaje.value = "Usuario creado"
+                        cargarUsuarios()
+                    }
+                    .addOnFailureListener {
+                        _mensaje.value = "Error al crear usuario"
+                    }
+            } else {
+                // Actualizar existente
+                db.collection("usuario")
+                    .document(usuario.id)
+                    .update(
+                        mapOf(
+                            "nombre" to usuario.nombre,
+                            "correo" to usuario.correo,
+                            "rol" to usuario.rol
+                        )
+                    )
+                    .addOnSuccessListener {
+                        _mensaje.value = "Usuario actualizado"
+                        cargarUsuarios()
+                    }
+                    .addOnFailureListener {
+                        _mensaje.value = "Error al actualizar usuario"
+                    }
+            }
+        }
     }
 }

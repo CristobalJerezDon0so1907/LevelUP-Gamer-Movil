@@ -3,13 +3,14 @@ package com.example.levelup_gamer.viewmodel
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.levelup_gamer.repository.UsuarioRepository
+import com.example.levelup_gamer.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class RegistroViewModel : ViewModel() {
-    private val repositorio = UsuarioRepository()
+class RegistroViewModel(
+    private val repositorio: AuthRepository = AuthRepository()
+) : ViewModel() {
 
     private val _cargando = MutableStateFlow(false)
     val cargando: StateFlow<Boolean> = _cargando
@@ -22,48 +23,45 @@ class RegistroViewModel : ViewModel() {
 
     fun registroUsuario(correo: String, clave: String, confirmarClave: String, nombre: String) {
 
-        // ===== VALIDACIÓN CAMPOS OBLIGATORIOS =====
+        //Validacion de campos vacios
         if (correo.isBlank() || clave.isBlank() || confirmarClave.isBlank() || nombre.isBlank()) {
             _errorMensaje.value = "Todos los campos son obligatorios"
             return
         }
 
-        // ===== VALIDAR NOMBRE SIN NÚMEROS =====
-        if (nombre.any { it.isDigit() }) {
-            _errorMensaje.value = "El nombre no puede contener números"
+        //Validacion del nombre
+        if (nombre.length < 3) {
+            _errorMensaje.value = "El nombre debe tener al menos 3 caracteres"
             return
         }
 
-        // ===== VALIDACIÓN DE CORREO =====
+        //Validacion de correo
         if (!Patterns.EMAIL_ADDRESS.matcher(correo).matches()) {
             _errorMensaje.value = "El correo no es válido"
             return
         }
 
-        val dominiosPermitidos = listOf("@duoc.cl", "@gmail.com", "@hotmail.com", "@outlook.com")
+        val dominiosPermitidos = listOf("gmail.com", "hotmail.com", "outlook.com")
 
-        if (!dominiosPermitidos.any { correo.endsWith(it) }) {
-            _errorMensaje.value = "Solo se permiten correos Duoc, Gmail, Hotmail u Outlook"
+        val dominioCorreo = correo.substringAfterLast("@")
+
+        if (dominioCorreo !in dominiosPermitidos) {
+            _errorMensaje.value = "Solo se permiten correos Gmail, Hotmail u Outlook"
             return
         }
 
-        // ===== VALIDACIÓN DE CONTRASEÑA FUERTE =====
-        val passwordRegex =
-            Regex("^(?=.*[A-Z])(?=.*\\d)(?=.*[@#\$%^&+=!¿?*._-]).{8,}\$")
 
-        if (!passwordRegex.matches(clave)) {
-            _errorMensaje.value =
-                "La contraseña debe tener:\n• Mínimo 8 caracteres\n• 1 mayúscula\n• 1 número\n• 1 símbolo"
+        //Validacion de clave
+        if (clave.length < 6) {
+            _errorMensaje.value = "La contraseña debe tener mínimo 6 caracteres"
             return
         }
 
-        // ===== VALIDAR QUE COINCIDAN =====
         if (clave != confirmarClave) {
             _errorMensaje.value = "Las contraseñas no coinciden"
             return
         }
 
-        // ===== CONTINUAR SI TODO ES VÁLIDO =====
         _cargando.value = true
         _errorMensaje.value = ""
 
@@ -78,6 +76,7 @@ class RegistroViewModel : ViewModel() {
             }
         }
     }
+
 
     fun limpiarRegistro() {
         _registroExitoso.value = false

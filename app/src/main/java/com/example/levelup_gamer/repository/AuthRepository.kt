@@ -1,5 +1,6 @@
 package com.example.levelup_gamer.repository
 
+import android.util.Log
 import  com.example.levelup_gamer.model.Usuario
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -20,7 +21,7 @@ class AuthRepository {
                     Usuario(
                         correo = correo,
                         nombre = "Administrador",
-                        rol = "admin",
+                        rol = "admin"
                     )
                 }
                 else -> {
@@ -29,7 +30,21 @@ class AuthRepository {
                 }
             }
         } catch (e: Exception){
+            Log.e("AuthRepository", "Error al iniciar sesión", e)
             null
+        }
+    }
+
+
+    suspend fun guardarTokenFcm(token: String) {
+        val uid = auth.currentUser?.uid ?: return
+        try {
+            db.collection("usuario")
+                .document(uid)
+                .update("fcmToken", token)
+                .await()
+        } catch (_: Exception) {
+            // puedes loguear el error si quieres
         }
     }
 
@@ -49,11 +64,47 @@ class AuthRepository {
                     correo = doc.getString("correo") ?: "",
                     clave = doc.getString("clave") ?: "",
                     nombre = doc.getString("nombre") ?: "Cliente",
-                    rol = doc.getString("rol") ?: "cliente",
+                    rol = doc.getString("rol") ?: "cliente"
                 )
             } else null
         } catch (e: Exception) {
             null
         }
     }
+
+
+    //Crear usuario en firebase
+    suspend fun registroUsuario(correo: String, clave: String, nombre: String): Boolean {
+        return try {
+
+            val authResult = auth.createUserWithEmailAndPassword(correo, clave).await()
+            val userId = authResult.user?.uid
+            if (userId == null) {
+                Log.e("AuthRepository", "UserId nulo después de createUser")
+                return false
+            }
+
+
+            // Guardar datos en firestore
+            val userMap = mapOf(
+                "correo" to correo,
+                "clave" to clave,
+                "nombre" to nombre,
+                "rol" to "cliente",
+                "fechaRegistro" to System.currentTimeMillis()
+            )
+
+            db.collection("usuario")
+                .document(userId)
+                .set(userMap)
+                .await()
+
+            true
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "Error al registrar usuario", e)
+            false
+        }
+    }
+
+
 }

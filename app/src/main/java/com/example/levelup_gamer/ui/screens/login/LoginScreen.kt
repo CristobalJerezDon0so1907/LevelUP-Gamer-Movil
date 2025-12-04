@@ -1,6 +1,5 @@
 package com.example.levelup_gamer.ui.screens.login
 
-import androidx.compose.runtime.Composable
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -8,37 +7,33 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.levelup_gamer.repository.AuthRepository
+import com.example.levelup_gamer.model.Usuario
 import com.example.levelup_gamer.viewmodel.LoginViewModel
 
 @Composable
 fun LoginScreen(
     onRegisterClick: () -> Unit = {},
-    onLoginSuccess: (user: com.example.levelup_gamer.model.Usuario ) -> Unit = {}
+    onLoginSuccess: (user: Usuario) -> Unit = {},
+    // IMPORTANTE: lo puedes pasar desde AppNavegacion
+    viewModel: LoginViewModel = viewModel()
 ) {
-
     val context = LocalContext.current
 
     var correo by remember { mutableStateOf("") }
     var pass by remember { mutableStateOf("") }
 
-    // ❗ Variables de error
     var correoError by remember { mutableStateOf<String?>(null) }
     var passError by remember { mutableStateOf<String?>(null) }
 
-    val viewModel: LoginViewModel = viewModel()
     val user by viewModel.user.collectAsState()
     val carga by viewModel.carga.collectAsState()
 
-    val repositorio = AuthRepository()
-
-    // Observa cuando el usuario se loguea
     LaunchedEffect(user) {
         user?.let {
             val mensaje = when (it.rol) {
@@ -50,7 +45,6 @@ fun LoginScreen(
         }
     }
 
-    // 👉 Función de validación
     fun validarCampos(): Boolean {
         correoError = when {
             correo.isBlank() -> "El correo es obligatorio"
@@ -75,7 +69,6 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         Text(
             "Iniciar Sesión",
             style = MaterialTheme.typography.headlineSmall,
@@ -84,9 +77,6 @@ fun LoginScreen(
 
         Spacer(Modifier.height(46.dp))
 
-        // -------------------------
-        // CAMPO CORREO
-        // -------------------------
         OutlinedTextField(
             value = correo,
             onValueChange = {
@@ -99,7 +89,6 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        // Mensaje de error
         if (correoError != null) {
             Text(
                 text = correoError!!,
@@ -111,9 +100,6 @@ fun LoginScreen(
 
         Spacer(Modifier.height(10.dp))
 
-        // -------------------------
-        // CAMPO CONTRASEÑA
-        // -------------------------
         OutlinedTextField(
             value = pass,
             onValueChange = {
@@ -128,7 +114,6 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        // Mensaje de error
         if (passError != null) {
             Text(
                 text = passError!!,
@@ -140,9 +125,6 @@ fun LoginScreen(
 
         Spacer(Modifier.height(30.dp))
 
-        // -------------------------
-        // BOTÓN LOGIN
-        // -------------------------
         Button(
             onClick = {
                 if (validarCampos()) {

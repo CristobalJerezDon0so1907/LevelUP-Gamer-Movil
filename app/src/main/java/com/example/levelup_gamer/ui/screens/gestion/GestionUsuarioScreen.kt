@@ -4,8 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
@@ -20,7 +20,7 @@ import com.example.levelup_gamer.viewmodel.GestionUsuariosViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GestionUsuariosScreen(
+fun GestionUsuarioScreen(
     viewModel: GestionUsuariosViewModel,
     onBack: () -> Unit,
     onEditarUsuario: (Usuario) -> Unit = {}
@@ -33,13 +33,21 @@ fun GestionUsuariosScreen(
         viewModel.cargarUsuarios()
     }
 
+    if (mensaje != null) {
+        LaunchedEffect(mensaje) {
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Gestión de Usuarios") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Volver"
+                        )
                     }
                 }
             )
@@ -47,6 +55,7 @@ fun GestionUsuariosScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
+                    // Usuario nuevo
                     onEditarUsuario(Usuario())
                 },
                 containerColor = MaterialTheme.colorScheme.primary
@@ -109,7 +118,7 @@ fun GestionUsuariosScreen(
                                 }
                                 IconButton(
                                     onClick = {
-                                        viewModel.eliminarUsuario(usuario.correo)
+                                        viewModel.eliminarUsuario(usuario.id)
                                     }
                                 ) {
                                     Icon(

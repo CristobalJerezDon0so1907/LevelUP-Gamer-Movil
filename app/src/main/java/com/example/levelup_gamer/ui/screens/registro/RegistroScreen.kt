@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.util.Patterns
+import com.example.levelup_gamer.viewmodel.RegistroViewModel
 
 
 @Composable
@@ -28,18 +29,18 @@ fun RegistroScreen(
     var confirmarClave by remember { mutableStateOf("") }
     var nombre by remember { mutableStateOf("") }
 
-    // ❗ Variables de error
+    //Variables de error
     var nombreError by remember { mutableStateOf<String?>(null) }
     var correoError by remember { mutableStateOf<String?>(null) }
     var claveError by remember { mutableStateOf<String?>(null) }
     var confirmarClaveError by remember { mutableStateOf<String?>(null) }
 
-    val viewModel: com.example.levelup_gamer.viewmodel.RegistroViewModel = viewModel()
+    val viewModel: RegistroViewModel = viewModel()
     val cargando by viewModel.cargando.collectAsState()
     val registroExitoso by viewModel.registroExitoso.collectAsState()
     val errorMensaje by viewModel.errorMensaje.collectAsState()
 
-    // ✔ Mensajes automáticos
+    //Mensajes automáticos
     LaunchedEffect(registroExitoso) {
         if (registroExitoso) {
             Toast.makeText(context, "Registro exitoso", Toast.LENGTH_SHORT).show()
@@ -53,7 +54,7 @@ fun RegistroScreen(
         }
     }
 
-    // ✔ Validación completa
+    //Validación completa
     fun validarCampos(): Boolean {
         nombreError = when {
             nombre.isBlank() -> "El nombre es obligatorio"
@@ -65,6 +66,7 @@ fun RegistroScreen(
             correo.isBlank() -> "El correo es obligatorio"
             !android.util.Patterns.EMAIL_ADDRESS.matcher(correo).matches() ->
                 "Formato de correo inválido"
+
             else -> null
         }
 
@@ -109,9 +111,8 @@ fun RegistroScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // =========================
-        // NOMBRE
-        // =========================
+
+        //Nombre
         OutlinedTextField(
             value = nombre,
             onValueChange = {
@@ -130,9 +131,7 @@ fun RegistroScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // =========================
-        // CORREO
-        // =========================
+        //Correo
         OutlinedTextField(
             value = correo,
             onValueChange = {
@@ -151,9 +150,8 @@ fun RegistroScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // =========================
-        // CONTRASEÑA
-        // =========================
+
+        //Contraseña
         OutlinedTextField(
             value = clave,
             onValueChange = {
@@ -173,9 +171,7 @@ fun RegistroScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // =========================
-        // CONFIRMAR CONTRASEÑA
-        // =========================
+        //Confirmar contraseña
         OutlinedTextField(
             value = confirmarClave,
             onValueChange = {
@@ -190,24 +186,25 @@ fun RegistroScreen(
         )
 
         if (confirmarClaveError != null) {
-            Text(confirmarClaveError!!, color = Color.Red, style = MaterialTheme.typography.bodySmall)
+            Text(
+                confirmarClaveError!!,
+                color = Color.Red,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // =========================
-        // BOTÓN REGISTRO
-        // =========================
+
+        //Boton de registro
         Button(
             onClick = {
-                if (validarCampos()) {
-                    viewModel.registroUsuario(correo, clave, confirmarClave, nombre)
-                }
+                viewModel.registroUsuario(correo, clave, confirmarClave, nombre)
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            enabled = !cargando && validarCampos(),
+            enabled = !cargando,
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFF2196F3),
                 contentColor = Color.White
@@ -223,12 +220,5 @@ fun RegistroScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            "* Campos obligatorios",
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray
-        )
     }
 }

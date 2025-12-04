@@ -6,7 +6,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.levelup_gamer.model.Producto
@@ -24,14 +23,21 @@ fun ProductoFormScreen(
     var stock by remember { mutableStateOf(producto?.stock?.toString() ?: "") }
     var imagen by remember { mutableStateOf(producto?.imagenUrl ?: "") }
 
+
     val cargando by viewModel.cargando.collectAsState()
     val mensaje by viewModel.mensaje.collectAsState()
+
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(if (producto?.id?.isNotEmpty() == true) "Editar Producto" else "Nuevo Producto")
+                    Text(
+                        if (producto?.id?.isNotEmpty() == true)
+                            "Editar producto"
+                        else
+                            "Nuevo producto"
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -42,21 +48,21 @@ fun ProductoFormScreen(
                     IconButton(
                         onClick = {
                             val productoActualizado = Producto(
-                                id = producto?.id ?: "",
+                                id = producto?.id ?: "",   // vacío = crear nuevo
                                 nombre = nombre,
                                 precio = precio.toDoubleOrNull() ?: 0.0,
                                 stock = stock.toIntOrNull() ?: 0,
                                 imagenUrl = imagen
+
                             )
 
-                            if (producto?.id?.isNotEmpty() == true) {
-                                viewModel.actualizarProducto(producto.id, productoActualizado)
-                            } else {
-                                viewModel.crearProducto(productoActualizado)
-                            }
+                            viewModel.guardarProducto(productoActualizado)
+
                             onBack()
                         },
-                        enabled = !cargando && nombre.isNotEmpty() && precio.toDoubleOrNull() != null
+                        enabled = !cargando &&
+                                nombre.isNotBlank() &&
+                                precio.toDoubleOrNull() != null
                     ) {
                         Icon(Icons.Default.Save, contentDescription = "Guardar")
                     }
