@@ -13,10 +13,21 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="CarritoScreenTest">
+      <SelectionState runConfigName="PerfilClienteScreenTest">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="Tests in 'com.example.levelup_gamer.ui.carrito'">
+      <SelectionState runConfigName="PerfilAdminScreenTest">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2025-12-04T16:48:48.850691600Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\Duoc\.android\avd\Pixel_7_Pro.avd" />
+            </handle>
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="Tests in 'com.example.levelup_gamer'">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>
