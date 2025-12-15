@@ -1,7 +1,10 @@
 package com.example.levelup_gamer.ui.screens.perfil
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -24,10 +27,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.example.levelup_gamer.R
 import com.example.levelup_gamer.repository.subirFotoAdmin
+import com.example.levelup_gamer.viewmodel.LoginViewModel
 import com.google.firebase.firestore.FirebaseFirestore
 import java.io.File
 
@@ -40,7 +45,7 @@ private val CardBackgroundColor = Color(0xFF5E548E)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilAdminScreen(
-    nombre: String = "Administrador",
+    loginViewModel: LoginViewModel,
     onLogout: () -> Unit = {},
     onGestionProductos: () -> Unit = {},
     onGestionUsuarios: () -> Unit = {},
@@ -48,20 +53,28 @@ fun PerfilAdminScreen(
 ) {
     val context = LocalContext.current
 
+    val userState by loginViewModel.user.collectAsState()
+    val nombreActual = userState?.nombre ?: "Administrador"
+
+    var nombreEditable by remember { mutableStateOf("") }
+    var guardandoNombre by remember { mutableStateOf(false) }
+
+    LaunchedEffect(nombreActual) {
+        nombreEditable = nombreActual
+    }
+
     var fotoUriString by remember { mutableStateOf<String?>(null) }
     var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
 
-
+    // Cargar foto actual desde Firestore
     LaunchedEffect(Unit) {
-        val db = FirebaseFirestore.getInstance()
-        db.collection("admin")
+        FirebaseFirestore.getInstance()
+            .collection("admin")
             .document("perfil")
             .get()
             .addOnSuccessListener { doc ->
                 val url = doc.getString("fotoUrl")
-                if (!url.isNullOrBlank()) {
-                    fotoUriString = url
-                }
+                if (!url.isNullOrBlank()) fotoUriString = url
             }
     }
 
@@ -71,9 +84,8 @@ fun PerfilAdminScreen(
         uri?.let {
             fotoUriString = it.toString()
             subirFotoAdmin(it) { url ->
-                if (url != null) {
-                    fotoUriString = url
-                }
+                if (!url.isNullOrBlank()) fotoUriString = url
+                else Toast.makeText(context, "No se pudo subir la foto", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -84,14 +96,14 @@ fun PerfilAdminScreen(
         if (success) {
             tempCameraUri?.let { uri ->
                 fotoUriString = uri.toString()
-                subirFotoAdmin(uri) { urlSubida ->
-                    if (urlSubida != null) {
-                        fotoUriString = urlSubida
-                    }
+                subirFotoAdmin(uri) { url ->
+                    if (!url.isNullOrBlank()) fotoUriString = url
+                    else Toast.makeText(context, "No se pudo subir la foto", Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
+
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -100,14 +112,27 @@ fun PerfilAdminScreen(
             tempCameraUri = uri
             cameraLauncher.launch(uri)
         } else {
+            Toast.makeText(context, "Permiso de cámara denegado", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun abrirCamaraConPermiso() {
+        val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+                PackageManager.PERMISSION_GRANTED
+
+        if (granted) {
+            val uri = crearFotoUri(context)
+            tempCameraUri = uri
+            cameraLauncher.launch(uri)
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
     val fotoUri = fotoUriString?.let { Uri.parse(it) }
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+
         Image(
             painter = painterResource(id = R.drawable.fondo),
             contentDescription = "Fondo de perfil administrador",
@@ -136,13 +161,11 @@ fun PerfilAdminScreen(
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             Card(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 elevation = CardDefaults.cardElevation(4.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = CardBackgroundColor
-                )
+                colors = CardDefaults.cardColors(containerColor = CardBackgroundColor)
             ) {
                 Column(
                     modifier = Modifier
@@ -175,7 +198,59 @@ fun PerfilAdminScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(text = nombre, style = MaterialTheme.typography.titleLarge, color = PrimaryColor)
+                    Text(
+                        text = nombreActual,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = PrimaryColor
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedTextField(
+                        value = nombreEditable,
+                        onValueChange = { nombreEditable = it },
+                        label = { Text("Nombre de usuario", color = Color.White.copy(alpha = 0.8f)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = CardBackgroundColor,
+                            unfocusedContainerColor = CardBackgroundColor,
+                            focusedBorderColor = PrimaryColor,
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
+                            cursorColor = PrimaryColor,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    val hayCambios = nombreEditable.trim() != nombreActual.trim()
+
+                    Button(
+                        onClick = {
+                            val nuevo = nombreEditable.trim()
+                            if (nuevo.isBlank()) {
+                                Toast.makeText(context, "El nombre no puede estar vacío", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+
+                            guardandoNombre = true
+                            loginViewModel.actualizarNombreAdmin(nuevoNombre = nuevo) { exito ->
+                                guardandoNombre = false
+                                Toast.makeText(
+                                    context,
+                                    if (exito) "Nombre actualizado" else "Error al guardar",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        },
+                        enabled = !guardandoNombre && nombreEditable.isNotBlank() && hayCambios,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
+                    ) {
+                        Text(if (guardandoNombre) "Guardando..." else "Guardar cambios")
+                    }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -184,9 +259,7 @@ fun PerfilAdminScreen(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         FilledTonalButton(
-                            onClick = {
-                                cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-                            },
+                            onClick = { abrirCamaraConPermiso() },
                             colors = ButtonDefaults.filledTonalButtonColors(
                                 containerColor = ManagementColor2,
                                 contentColor = Color.White
@@ -198,9 +271,7 @@ fun PerfilAdminScreen(
                         }
 
                         FilledTonalButton(
-                            onClick = {
-                                galleryLauncher.launch("image/*")
-                            },
+                            onClick = { galleryLauncher.launch("image/*") },
                             colors = ButtonDefaults.filledTonalButtonColors(
                                 containerColor = ManagementColor2,
                                 contentColor = Color.White
@@ -216,7 +287,6 @@ fun PerfilAdminScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-
             Text(
                 text = "Panel de gestión",
                 style = MaterialTheme.typography.titleMedium,
@@ -227,15 +297,13 @@ fun PerfilAdminScreen(
 
             FilledTonalButton(
                 onClick = onGestionProductos,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
+                modifier = Modifier.fillMaxWidth().height(48.dp),
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = ManagementColor1,
                     contentColor = Color.White
                 )
             ) {
-                Icon(imageVector = Icons.Default.ShoppingCart, contentDescription = "Gestión de productos")
+                Icon(Icons.Default.ShoppingCart, contentDescription = "Gestión de productos")
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Gestión de productos")
             }
@@ -244,15 +312,13 @@ fun PerfilAdminScreen(
 
             FilledTonalButton(
                 onClick = onGestionUsuarios,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
+                modifier = Modifier.fillMaxWidth().height(48.dp),
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = ManagementColor2,
                     contentColor = Color.White
                 )
             ) {
-                Icon(imageVector = Icons.Default.Group, contentDescription = "Gestión de usuarios")
+                Icon(Icons.Default.Group, contentDescription = "Gestión de usuarios")
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Gestión de usuarios")
             }
@@ -261,15 +327,13 @@ fun PerfilAdminScreen(
 
             FilledTonalButton(
                 onClick = onGestionPedidos,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
+                modifier = Modifier.fillMaxWidth().height(48.dp),
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = ManagementColor3,
                     contentColor = Color.White
                 )
             ) {
-                Icon(imageVector = Icons.Default.ListAlt, contentDescription = "Gestión de pedidos")
+                Icon(Icons.Default.ListAlt, contentDescription = "Gestión de pedidos")
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Gestión de pedidos")
             }

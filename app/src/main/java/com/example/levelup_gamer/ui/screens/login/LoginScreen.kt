@@ -1,15 +1,19 @@
 package com.example.levelup_gamer.ui.screens.login
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -17,12 +21,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.levelup_gamer.R
 import com.example.levelup_gamer.model.Usuario
 import com.example.levelup_gamer.viewmodel.LoginViewModel
-import androidx.compose.foundation.Image
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import com.example.levelup_gamer.R
 
 @Composable
 fun LoginScreen(
@@ -32,6 +33,8 @@ fun LoginScreen(
 ) {
     val context = LocalContext.current
 
+    var navegado by remember { mutableStateOf(false) }
+
     var correo by remember { mutableStateOf("") }
     var pass by remember { mutableStateOf("") }
 
@@ -40,24 +43,33 @@ fun LoginScreen(
 
     val user by viewModel.user.collectAsState()
     val carga by viewModel.carga.collectAsState()
+    val error by viewModel.error.collectAsState()
 
-    // Cuando el login es correcto
     LaunchedEffect(user) {
-        user?.let {
-            val mensaje = when (it.rol) {
-                "admin" -> "Bienvenido Admin: ${it.nombre}"
-                else -> "Bienvenido: ${it.nombre}"
+        if (user != null && !navegado) {
+            navegado = true
+
+            val mensaje = if (user!!.rol == "admin") {
+                "Bienvenido Admin: ${user!!.nombre}"
+            } else {
+                "Bienvenido: ${user!!.nombre}"
             }
             Toast.makeText(context, mensaje, Toast.LENGTH_LONG).show()
-            onLoginSuccess(it)
+            onLoginSuccess(user!!)
+        }
+    }
+
+
+    LaunchedEffect(error) {
+        error?.let { msg ->
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
         }
     }
 
     fun validarCampos(): Boolean {
         correoError = when {
             correo.isBlank() -> "El correo es obligatorio"
-            !android.util.Patterns.EMAIL_ADDRESS.matcher(correo).matches() ->
-                "Formato de correo inválido"
+            !android.util.Patterns.EMAIL_ADDRESS.matcher(correo).matches() -> "Formato de correo inválido"
             else -> null
         }
 
@@ -70,16 +82,13 @@ fun LoginScreen(
         return correoError == null && passError == null
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.fondo),
             contentDescription = "Fondo de pantalla",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
-        //
 
         Box(
             modifier = Modifier
@@ -89,9 +98,7 @@ fun LoginScreen(
         ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White
-                ),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                 shape = MaterialTheme.shapes.large
             ) {
@@ -102,12 +109,7 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
-                    // Encabezado
-                    Text(
-                        text = "Bienvenido a",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
+                    Text("Bienvenido a", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
 
                     Text(
                         text = "LevelUP Gamer",
@@ -119,33 +121,20 @@ fun LoginScreen(
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(Modifier.height(8.dp))
-
-                    Text(
-                        text = "Inicia sesión para continuar",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF757575),
-                        textAlign = TextAlign.Center
-                    )
-
                     Spacer(Modifier.height(32.dp))
 
-                    // CORREO
                     OutlinedTextField(
                         value = correo,
-                        onValueChange = {
-                            correo = it
-                            validarCampos()
-                        },
+                        onValueChange = { correo = it; validarCampos() },
                         label = { Text("Correo") },
                         singleLine = true,
                         isError = correoError != null,
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    if (correoError != null) {
+                    correoError?.let {
                         Text(
-                            text = correoError!!,
+                            text = it,
                             color = Color(0xFFD32F2F),
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier
@@ -156,13 +145,9 @@ fun LoginScreen(
 
                     Spacer(Modifier.height(16.dp))
 
-                    // CLAVE
                     OutlinedTextField(
                         value = pass,
-                        onValueChange = {
-                            pass = it
-                            validarCampos()
-                        },
+                        onValueChange = { pass = it; validarCampos() },
                         label = { Text("Contraseña") },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
@@ -171,9 +156,9 @@ fun LoginScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    if (passError != null) {
+                    passError?.let {
                         Text(
-                            text = passError!!,
+                            text = it,
                             color = Color(0xFFD32F2F),
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier
@@ -184,16 +169,9 @@ fun LoginScreen(
 
                     Spacer(Modifier.height(24.dp))
 
-                    // Botón de login
                     Button(
-                        onClick = {
-                            if (validarCampos()) {
-                                viewModel.login(correo, pass)
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
+                        onClick = { if (validarCampos()) viewModel.login(correo, pass) },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
                         enabled = !carga && correoError == null && passError == null,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF7B1E57),
@@ -213,12 +191,8 @@ fun LoginScreen(
 
                     Spacer(Modifier.height(16.dp))
 
-                    // Registro
                     TextButton(onClick = onRegisterClick) {
-                        Text(
-                            text = "¿No tienes cuenta? Regístrate aquí",
-                            color = Color(0xFF7B1E57)
-                        )
+                        Text("¿No tienes cuenta? Regístrate aquí", color = Color(0xFF7B1E57))
                     }
                 }
             }

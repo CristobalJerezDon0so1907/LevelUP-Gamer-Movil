@@ -19,7 +19,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
@@ -38,6 +37,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.example.levelup_gamer.R
+import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import coil.compose.AsyncImage
 
 private val PrimaryColor = Color(0xFF4CAF50)
 private val SecondaryButtonColor = Color(0xFF555555)
@@ -62,6 +66,21 @@ fun PerfilClienteScreen(
 
     val lazyListState = rememberLazyListState()
 
+    var fotoUrl by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(userState?.correo) {
+        val correo = userState?.correo ?: return@LaunchedEffect
+        FirebaseFirestore.getInstance()
+            .collection("usuario")
+            .whereEqualTo("correo", correo)
+            .limit(1)
+            .get()
+            .addOnSuccessListener { query ->
+                val url = query.documents.firstOrNull()?.getString("fotoUrl")
+                fotoUrl = url
+            }
+    }
+
     LaunchedEffect(lazyListState) {
         snapshotFlow { lazyListState.layoutInfo.visibleItemsInfo }
             .collectLatest { visibleItems ->
@@ -75,7 +94,6 @@ fun PerfilClienteScreen(
             }
     }
 
-
     Box(modifier = Modifier.fillMaxSize()) {
 
         Image(
@@ -85,9 +103,7 @@ fun PerfilClienteScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
 
             Card(
                 modifier = Modifier
@@ -95,29 +111,43 @@ fun PerfilClienteScreen(
                     .padding(top = 80.dp)
                     .padding(horizontal = 16.dp),
                 elevation = CardDefaults.cardElevation(4.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = CardBackgroundColor
-                )
+                colors = CardDefaults.cardColors(containerColor = CardBackgroundColor)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(
-                                text = "Bienvenido ${userState?.nombre ?: nombre}",
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = PrimaryColor
-                            )
-                            Text(
-                                text = "Rol: Cliente",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray
-                            )
+
+                        // Header con foto textos
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+
+                            if (!fotoUrl.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = Uri.parse(fotoUrl),
+                                    contentDescription = "Foto de perfil",
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.LightGray)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                            }
+
+                            Column {
+                                Text(
+                                    text = "Bienvenido ${userState?.nombre ?: nombre}",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = PrimaryColor
+                                )
+                                Text(
+                                    text = "Rol: Cliente",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.Gray
+                                )
+                            }
                         }
 
                         Icon(
@@ -183,8 +213,7 @@ fun PerfilClienteScreen(
 
                     FilledTonalButton(
                         onClick = onVerPedidos,
-                        modifier = Modifier
-                            .fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.filledTonalButtonColors(
                             containerColor = PrimaryColor,
                             contentColor = Color.White
@@ -248,8 +277,7 @@ fun PerfilClienteScreen(
                     items(items = productos) { producto ->
                         ItemProducto(
                             producto = producto,
-                            cantidadEnCarrito = carrito.find { it.producto.id == producto.id }?.cantidad
-                                ?: 0,
+                            cantidadEnCarrito = carrito.find { it.producto.id == producto.id }?.cantidad ?: 0,
                             onAgregar = {
                                 if (producto.stock > 0) {
                                     viewModel.agregarAlCarrito(producto)

@@ -83,8 +83,9 @@ class CarritoViewModel(
                 val carritoActual = _carrito.value.toMutableList()
                 val itemExistente = carritoActual.find { it.producto.id == producto.id }
 
-                val stockDisponible =
-                    productoActualizado.stock - (itemExistente?.cantidad ?: 0)
+                val stockActualEnCatalogo = _productos.value.find { it.id == producto.id }?.stock ?: productoActualizado.stock
+                val stockDisponible = stockActualEnCatalogo - (itemExistente?.cantidad ?: 0)
+
                 if (stockDisponible <= 0) {
                     enviarNotificacion("No quedan unidades disponibles")
                     return@launch
@@ -96,10 +97,18 @@ class CarritoViewModel(
                     carritoActual.add(ItemCarrito(productoActualizado, 1))
                 }
 
-                repository.actualizarStock(producto.id, productoActualizado.stock - 1)
+                //ACTUALIZAR EL STOCK EN LA LISTA LOCAL (_productos)
+                val nuevaListaProductos = _productos.value.map { p ->
+                    if (p.id == producto.id) {
+                        p.copy(stock = p.stock - 1)
+                    } else {
+                        p
+                    }
+                }
+                _productos.value = nuevaListaProductos
 
+                //ACTUALIZAR EL CARRITO
                 _carrito.value = carritoActual
-                actualizarProductosEnCatalogo()
 
                 enviarNotificacion("Producto agregado al carrito")
 
@@ -116,14 +125,6 @@ class CarritoViewModel(
                 val item = carritoActual.find { it.producto.id == producto.id }
 
                 if (item != null) {
-                    val productoActualizado = repository.obtenerProductoPorId(producto.id)
-
-                    if (productoActualizado != null) {
-                        repository.actualizarStock(
-                            producto.id,
-                            productoActualizado.stock + 1
-                        )
-                    }
 
                     if (item.cantidad > 1) {
                         item.cantidad--
@@ -133,8 +134,18 @@ class CarritoViewModel(
                         enviarNotificacion("Producto eliminado del carrito")
                     }
 
+                    // ACTUALIZAR EL STOCK EN LA LISTA LOCAL
+                    val nuevaListaProductos = _productos.value.map { p ->
+                        if (p.id == producto.id) {
+                            p.copy(stock = p.stock + 1) // Sumar de vuelta a la lista local
+                        } else {
+                            p
+                        }
+                    }
+                    _productos.value = nuevaListaProductos
+
+                    //ACTUALIZAR EL CARRITO
                     _carrito.value = carritoActual
-                    actualizarProductosEnCatalogo()
                 }
 
             } catch (e: Exception) {
@@ -150,19 +161,20 @@ class CarritoViewModel(
                 val item = carritoActual.find { it.producto.id == producto.id }
 
                 if (item != null) {
-                    val productoActualizado = repository.obtenerProductoPorId(producto.id)
-
-                    if (productoActualizado != null) {
-                        repository.actualizarStock(
-                            producto.id,
-                            productoActualizado.stock + item.cantidad
-                        )
+                    //Devolver el stock a la lista local
+                    val cantidadDevuelta = item.cantidad
+                    val nuevaListaProductos = _productos.value.map { p ->
+                        if (p.id == producto.id) {
+                            p.copy(stock = p.stock + cantidadDevuelta)
+                        } else {
+                            p
+                        }
                     }
+                    _productos.value = nuevaListaProductos
 
+                    // 2. Eliminar del carrito
                     carritoActual.remove(item)
                     _carrito.value = carritoActual
-
-                    actualizarProductosEnCatalogo()
 
                     enviarNotificacion("Producto eliminado completamente")
                 }
@@ -176,20 +188,23 @@ class CarritoViewModel(
     fun vaciarCarrito() {
         viewModelScope.launch {
             try {
-                _carrito.value.forEach { item ->
-                    val productoActualizado =
-                        repository.obtenerProductoPorId(item.producto.id)
-                    if (productoActualizado != null) {
-                        repository.actualizarStock(
-                            item.producto.id,
-                            productoActualizado.stock + item.cantidad
-                        )
+                //Devolver el stock de todos los items a la lista local
+                val itemsACancelar = _carrito.value
+                var nuevaListaProductos = _productos.value
+
+                itemsACancelar.forEach { item ->
+                    nuevaListaProductos = nuevaListaProductos.map { p ->
+                        if (p.id == item.producto.id) {
+                            p.copy(stock = p.stock + item.cantidad)
+                        } else {
+                            p
+                        }
                     }
                 }
+                _productos.value = nuevaListaProductos
 
+                //Vaciar el carrito
                 _carrito.value = emptyList()
-                actualizarProductosEnCatalogo()
-
                 enviarNotificacion("Carrito vaciado")
 
             } catch (e: Exception) {
@@ -199,52 +214,59 @@ class CarritoViewModel(
     }
 
     fun confirmarCompra(correoUsuario: String) {
+        if (_carrito.value.isEmpty()) {
+            enviarNotificacion("El carrito está vacío.")
+            return
+        }
+
+        val itemsAComprar = _carrito.value // Carrito actual
+        val totalCompra = itemsAComprar.sumOf { it.producto.precio * it.cantidad }
+
         viewModelScope.launch {
-            try {
-                val db = FirebaseFirestore.getInstance()
+            _cargando.value = true
 
-                //Calcular el total
-                val totalCompra = carrito.value.sumOf { it.producto.precio * it.cantidad }
+            // Llama a la función transaccional en el repositorio
+            val resultado = repository.realizarCheckoutYDescontarStock(
+                itemsAComprar = itemsAComprar,
+                correoUsuario = correoUsuario,
+                totalCompra = totalCompra
+            )
 
-                //Buscar el usuario por el correo
-                val usuarioQuery = db.collection("usuario")
-                    .whereEqualTo("correo", correoUsuario)
-                    .limit(1)
-                    .get()
-                    .await()
+            _cargando.value = false
 
-                val usuarioDoc = usuarioQuery.documents.firstOrNull()
-                val token = usuarioDoc?.getString("fcmToken")
+            resultado.fold(
+                onSuccess = { pedidoId ->
+                    //Éxito: Se descontó el stock y se guardó el pedido.
+                    //Buscar Token FCM (mantenemos tu lógica original)
+                    val db = FirebaseFirestore.getInstance()
+                    val usuarioQuery = db.collection("usuario")
+                        .whereEqualTo("correo", correoUsuario)
+                        .limit(1)
+                        .get()
+                        .await()
+                    val token = usuarioQuery.documents.firstOrNull()?.getString("fcmToken")
 
-                //total
-                val pedido = hashMapOf(
-                    "correoUsuario" to correoUsuario,
-                    "estado" to "Pendiente",
-                    "fecha" to System.currentTimeMillis(),
-                    "total" to totalCompra
-                )
+                    //Enviar la notificacion
+                    if (token != null) {
+                        FCMClient.enviarNotificacion(
+                            token,
+                            titulo = "¡Compra exitosa!",
+                            mensaje = "Tu pedido ($pedidoId) ha sido comprado con éxito. Total: $$totalCompra"
+                        )
+                    }
 
-                db.collection("pedidos").add(pedido).await()
+                    //Limpiar el carrito en el ViewModel y refrescar catálogo
+                    _carrito.value = emptyList()
+                    cargarProductos() // Recarga productos para mostrar el stock actualizado
 
-                //Enviar la notificacion solo si se aprobo
-                if (token != null) {
-                    FCMClient.enviarNotificacion(
-                        token,
-                        titulo = "¡Compra exitosa!",
-                        mensaje = "Tu pedido ha sido comprado con éxito. Total: $$totalCompra"
-                    )
+                    enviarNotificacion("Compra confirmada 🎉")
+                },
+                onFailure = { exception ->
+                    //Fallo: Ocurrió un error (ej. Stock insuficiente)
+                    val msg = exception.message ?: "Error desconocido al confirmar la compra."
+                    enviarNotificacion("Error de compra: $msg")
                 }
-
-                //Vaciar el carrito
-                _carrito.value = emptyList()
-                cargarProductos()
-
-                //Notificacion en la app
-                enviarNotificacion("Compra confirmada 🎉")
-
-            } catch (e: Exception) {
-                enviarNotificacion("Error al confirmar la compra")
-            }
+            )
         }
     }
 

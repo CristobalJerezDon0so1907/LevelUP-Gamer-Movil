@@ -1,11 +1,11 @@
 package com.example.levelup_gamer.model
 
-data class Usuario (
+data class Usuario(
     val id: String = "",
     val correo: String = "",
-    val clave: String = "",
     val nombre: String = "",
-    val rol: String = "", //Variable local va a establecer si el usuario es admin o cliente
-    val fechaRegistro: String = "",
-    val fcmToken: String = ""
+    val clave: String = "",
+    val rol: String = "cliente",
+    val fechaRegistro: Long = 0L,
+    val fotoUrl: String = ""
 )

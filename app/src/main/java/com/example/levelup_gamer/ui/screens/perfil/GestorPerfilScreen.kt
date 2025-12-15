@@ -1,7 +1,9 @@
 package com.example.levelup_gamer.ui.screens.perfil
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -21,6 +23,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -39,65 +42,119 @@ private val BackgroundColor = Color(0xFF1F1B3B)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GestorPerfilScreen(
+    loginViewModel: LoginViewModel,
     onBack: () -> Unit = {}
-) {
+)
+ {
     val context = LocalContext.current
-    val loginViewModel: LoginViewModel = viewModel()
     val userState by loginViewModel.user.collectAsState()
 
-    var nombreEditable by remember { mutableStateOf(userState?.nombre ?: "") }
+    val correoUsuario = userState?.correo
+    val nombreActual = userState?.nombre ?: ""
+
+    var nombreEditable by remember { mutableStateOf("") }
     var guardandoNombre by remember { mutableStateOf(false) }
 
     var fotoUriString by remember { mutableStateOf<String?>(null) }
     var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
 
-    val correoUsuario = userState?.correo
+    // ✅ SINCRONIZA el TextField cuando llega el userState (fix principal)
+    LaunchedEffect(nombreActual) {
+        nombreEditable = nombreActual
+    }
 
+    // Cargar foto desde Firestore por correo
     LaunchedEffect(correoUsuario) {
-        if (correoUsuario != null) {
-            FirebaseFirestore.getInstance()
-                .collection("usuario")
-                .whereEqualTo("correo", correoUsuario)
-                .get()
-                .addOnSuccessListener { query ->
-                    val url = query.documents.firstOrNull()?.getString("fotoUrl")
-                    if (!url.isNullOrBlank()) fotoUriString = url
-                }
-        }
+        if (correoUsuario.isNullOrBlank()) return@LaunchedEffect
+
+        FirebaseFirestore.getInstance()
+            .collection("usuario")
+            .whereEqualTo("correo", correoUsuario)
+            .limit(1)
+            .get()
+            .addOnSuccessListener { query ->
+                val url = query.documents.firstOrNull()?.getString("fotoUrl")
+                if (!url.isNullOrBlank()) fotoUriString = url
+            }
+            .addOnFailureListener {
+                Toast.makeText(context, "No se pudo cargar la foto", Toast.LENGTH_SHORT).show()
+            }
     }
 
     // Galería
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri ->
-        if (uri != null && correoUsuario != null) {
-            fotoUriString = uri.toString()
-            subirFotoCliente(context, uri, correoUsuario) { url ->
-                if (url != null) fotoUriString = url
+        if (uri == null) return@rememberLauncherForActivityResult
+        if (correoUsuario.isNullOrBlank()) {
+            Toast.makeText(context, "No se encontró el correo del usuario", Toast.LENGTH_SHORT).show()
+            return@rememberLauncherForActivityResult
+        }
+
+        fotoUriString = uri.toString()
+
+        subirFotoCliente(
+            uri = uri,
+            correo = correoUsuario
+        ) { url ->
+            if (!url.isNullOrBlank()) {
+                fotoUriString = url
+            } else {
+                Toast.makeText(context, "Error al subir foto", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     // Cámara
     val cameraLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.TakePicture()
+        contract = ActivityResultContracts.TakePicture()
     ) { success ->
-        if (success && tempCameraUri != null && correoUsuario != null) {
-            val uri = tempCameraUri!!
-            fotoUriString = uri.toString()
-            subirFotoCliente(context, uri, correoUsuario) { url ->
-                if (url != null) fotoUriString = url
+        if (!success) return@rememberLauncherForActivityResult
+        if (correoUsuario.isNullOrBlank()) {
+            Toast.makeText(context, "No se encontró el correo del usuario", Toast.LENGTH_SHORT).show()
+            return@rememberLauncherForActivityResult
+        }
+
+        val uri = tempCameraUri ?: return@rememberLauncherForActivityResult
+        fotoUriString = uri.toString()
+
+        subirFotoCliente(
+            uri = uri,
+            correo = correoUsuario
+        ) { url ->
+            if (!url.isNullOrBlank()) {
+                fotoUriString = url
+            } else {
+                Toast.makeText(context, "Error al subir foto", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
+    // Permiso cámara
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
+        contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
             val uri = crearFotoUriCliente(context)
             tempCameraUri = uri
             cameraLauncher.launch(uri)
+        } else {
+            Toast.makeText(context, "Permiso de cámara denegado", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun abrirCamaraConPermiso() {
+        val granted = ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (granted) {
+            val uri = crearFotoUriCliente(context)
+            tempCameraUri = uri
+            cameraLauncher.launch(uri)
+        } else {
+            cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
         }
     }
 
@@ -108,9 +165,7 @@ fun GestorPerfilScreen(
             TopAppBar(
                 title = { Text("Gestor de Perfil", color = Color.White) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("Volver", color = Color.White)
-                    }
+                    TextButton(onClick = onBack) { Text("Volver", color = Color.White) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = CardBackgroundColor,
@@ -140,13 +195,11 @@ fun GestorPerfilScreen(
                     .fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     elevation = CardDefaults.cardElevation(4.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = CardBackgroundColor
-                    )
+                    colors = CardDefaults.cardColors(containerColor = CardBackgroundColor)
                 ) {
                     Column(
                         modifier = Modifier
@@ -182,11 +235,8 @@ fun GestorPerfilScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            // Botón Tomar foto (Cámara)
                             FilledTonalButton(
-                                onClick = {
-                                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-                                },
+                                onClick = { abrirCamaraConPermiso() },
                                 colors = ButtonDefaults.filledTonalButtonColors(
                                     containerColor = ManagementColor2,
                                     contentColor = Color.White
@@ -197,7 +247,6 @@ fun GestorPerfilScreen(
                                 Text("Tomar foto")
                             }
 
-                            // Botón Galería
                             FilledTonalButton(
                                 onClick = { galleryLauncher.launch("image/*") },
                                 colors = ButtonDefaults.filledTonalButtonColors(
@@ -236,21 +285,44 @@ fun GestorPerfilScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                val hayCambios = nombreEditable.trim() != nombreActual.trim()
+
                 Button(
                     onClick = {
-                        guardandoNombre = true
-                        loginViewModel.actualizarNombreUsuario(
-                            nuevoNombre = nombreEditable
-                        ) { exito ->
-                            guardandoNombre = false
-                            if (exito) onBack()
+                        val nuevo = nombreEditable.trim()
+
+                        android.util.Log.d(
+                            "PerfilDebug",
+                            "Click Guardar | nombreEditable=$nuevo | userState=${userState?.correo}"
+                        )
+
+                        if (nuevo.isBlank()) {
+                            Toast.makeText(context, "El nombre no puede estar vacío", Toast.LENGTH_SHORT).show()
+                            return@Button
                         }
-                    },
-                    enabled = nombreEditable.isNotBlank() && !guardandoNombre,
+
+                        guardandoNombre = true
+
+                        loginViewModel.actualizarNombreUsuario(nuevoNombre = nuevo) { exito ->
+                            guardandoNombre = false
+
+                            android.util.Log.d(
+                                "PerfilDebug",
+                                "Resultado guardar nombre -> exito=$exito"
+                            )
+
+                            if (exito) {
+                                Toast.makeText(context, "Nombre actualizado correctamente", Toast.LENGTH_SHORT).show()
+                                onBack()
+                            } else {
+                                Toast.makeText(context, "Error al guardar los cambios", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                    ,
+                    enabled = !guardandoNombre && nombreEditable.isNotBlank() && hayCambios,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = PrimaryColor
-                    )
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
                 ) {
                     Text(if (guardandoNombre) "Guardando..." else "Guardar cambios")
                 }
@@ -269,26 +341,41 @@ fun crearFotoUriCliente(context: Context): Uri {
 }
 
 fun subirFotoCliente(
-    context: Context,
     uri: Uri,
     correo: String,
     onResult: (String?) -> Unit
 ) {
+    val safeId = correo
+        .replace(".", "_")
+        .replace("@", "_")
+
     val storageRef = FirebaseStorage.getInstance().reference
-    val fotoRef = storageRef.child("fotos_perfil_clientes/$correo.jpg")
+    val fotoRef = storageRef.child("fotos_perfil_clientes/$safeId/${System.currentTimeMillis()}.jpg")
 
     fotoRef.putFile(uri)
         .addOnSuccessListener {
-            fotoRef.downloadUrl.addOnSuccessListener { url ->
-                FirebaseFirestore.getInstance()
-                    .collection("usuario")
-                    .whereEqualTo("correo", correo)
-                    .get()
-                    .addOnSuccessListener { query ->
-                        query.documents.firstOrNull()?.reference?.update("fotoUrl", url.toString())
-                        onResult(url.toString())
-                    }
-            }
+            fotoRef.downloadUrl
+                .addOnSuccessListener { downloadUri ->
+                    val url = downloadUri.toString()
+
+                    FirebaseFirestore.getInstance()
+                        .collection("usuario")
+                        .whereEqualTo("correo", correo)
+                        .limit(1)
+                        .get()
+                        .addOnSuccessListener { query ->
+                            val docRef = query.documents.firstOrNull()?.reference
+                            if (docRef == null) {
+                                onResult(null)
+                            } else {
+                                docRef.update("fotoUrl", url)
+                                    .addOnSuccessListener { onResult(url) }
+                                    .addOnFailureListener { onResult(null) }
+                            }
+                        }
+                        .addOnFailureListener { onResult(null) }
+                }
+                .addOnFailureListener { onResult(null) }
         }
         .addOnFailureListener { onResult(null) }
 }

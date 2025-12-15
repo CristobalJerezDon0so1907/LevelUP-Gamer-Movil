@@ -1,5 +1,6 @@
 package com.example.levelup_gamer.repository
 
+import android.util.Log
 import com.example.levelup_gamer.model.Usuario
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -8,67 +9,60 @@ class UsuarioRepository {
 
     private val db = FirebaseFirestore.getInstance()
 
-    // Obtener todos los usuarios
-    suspend fun obtenerTodosLosUsuarios(): List<Usuario> {
+    suspend fun obtenerUsuarioPorUid(uid: String): Usuario? {
         return try {
-            val snapshot = db.collection("usuario").get().await()
-
-            snapshot.documents.map { doc ->
-                Usuario(
-                    correo = doc.getString("correo") ?: "",
-                    clave = doc.getString("clave") ?: "",
-                    nombre = doc.getString("nombre") ?: "",
-                    rol = doc.getString("rol") ?: "",
-                    fechaRegistro = doc.getString("fechaRegistro") ?: ""
-                )
-            }
+            val doc = db.collection("usuario").document(uid).get().await()
+            doc.toObject(Usuario::class.java)?.copy(id = doc.id)
         } catch (e: Exception) {
-            emptyList()
+            null
         }
     }
 
-    // Crear usuario usando el correo como ID
-    suspend fun crearUsuario(usuario: Usuario): Boolean {
-        return try {
-            val docRef = db.collection("usuario").document(usuario.correo)
-
-            // Revisar si ya existe
-            if (docRef.get().await().exists()) {
-                return false
-            }
-
-            docRef.set(usuario).await()
-            true
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    // Actualizar usuario por correo (correo es el ID del doc)
-    suspend fun actualizarUsuario(correo: String, usuario: Usuario): Boolean {
+    suspend fun actualizarNombre(uid: String, nuevoNombre: String): Boolean {
         return try {
             db.collection("usuario")
-                .document(correo)
-                .set(usuario)
+                .document(uid)
+                .update("nombre", nuevoNombre)
                 .await()
-
             true
         } catch (e: Exception) {
+            Log.e("UsuarioRepository", "Error actualizando nombre", e)
             false
         }
     }
 
-    // Eliminar usuario
-    suspend fun eliminarUsuario(correo: String): Boolean {
-        return try {
+    suspend fun actualizarNombreRobusto(uid: String, correo: String?, nuevoNombre: String): Boolean {
+        // 1) Intentar por UID (docId = uid)
+        val okUid = try {
             db.collection("usuario")
-                .document(correo)
-                .delete()
+                .document(uid)
+                .update("nombre", nuevoNombre)
+                .await()
+            true
+        } catch (_: Exception) {
+            false
+        }
+
+        if (okUid) return true
+
+        // 2) Fallback por correo (docId aleatorio)
+        if (correo.isNullOrBlank()) return false
+
+        return try {
+            val snap = db.collection("usuario")
+                .whereEqualTo("correo", correo)
+                .limit(1)
+                .get()
                 .await()
 
+            val docRef = snap.documents.firstOrNull()?.reference ?: return false
+
+            docRef.update("nombre", nuevoNombre).await()
             true
         } catch (e: Exception) {
+            Log.e("UsuarioRepository", "Error actualizando nombre (fallback correo)", e)
             false
         }
     }
+
 }
