@@ -12,7 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.Surface
-import com.example.levelup_gamer.navigation.AppNavegacion
+import com.example.levelup_gamer.navegation.AppNavegacion
 import com.example.levelup_gamer.ui.screens.splash.SplashSplash
 import com.example.levelup_gamer.ui.theme.LevelUPGamerTheme
 import kotlinx.coroutines.delay

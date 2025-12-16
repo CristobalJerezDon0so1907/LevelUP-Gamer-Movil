@@ -1,4 +1,4 @@
-package com.example.levelup_gamer.navigation
+package com.example.levelup_gamer.navegation
 
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
