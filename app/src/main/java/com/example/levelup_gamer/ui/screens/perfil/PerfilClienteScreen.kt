@@ -2,6 +2,7 @@ package com.example.levelup_gamer.ui.screens.perfil
 
 import android.net.Uri
 import android.util.Log
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,22 +11,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -49,11 +41,12 @@ import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.collectLatest
 
-// region Theme Colors
 private val PrimaryColor = Color(0xFF4CAF50)
-private val SecondaryButtonColor = Color(0xFF555555)
-private val CardBackgroundColor = Color.White
-// endregion
+private val SmallButtonHeight = 40.dp
+private val SecondaryButtonColor = Color(0xFF2F2F2F)
+private val Burdeo = Color(0xFF7A1E3A)
+private val CardBackgroundColor = Color.Black.copy(alpha = 0.35f)
+private val CardBorderColor = Color.White.copy(alpha = 0.10f)
 
 @Composable
 fun PerfilClienteScreen(
@@ -65,7 +58,6 @@ fun PerfilClienteScreen(
     onVerPedidos: () -> Unit = {},
     viewModel: CarritoViewModel
 ) {
-    // region ViewModels & State
     val loginViewModel: LoginViewModel = viewModel()
     val userState by loginViewModel.user.collectAsState()
 
@@ -75,17 +67,11 @@ fun PerfilClienteScreen(
 
     val lazyListState = rememberLazyListState()
     var fotoUrl by remember { mutableStateOf<String?>(null) }
-    // endregion
 
-    // ============================
-    // 🔔 NOTIFICACIONES: SOLO CUANDO CAMBIA EL ESTADO DEL PEDIDO
-    // ============================
     val context = LocalContext.current
     val pedidoNotifier = remember { PedidoNotificationHelper(context) }
 
     val correoCliente = userState?.correo
-
-    // Estado previo por pedido (para detectar cambios reales)
     val ultimoEstadoPorPedido = remember(correoCliente) { mutableStateMapOf<String, EstadoPedido>() }
     var primeraCarga by remember(correoCliente) { mutableStateOf(true) }
 
@@ -97,27 +83,21 @@ fun PerfilClienteScreen(
                 .addSnapshotListener { snapshot, error ->
                     if (error != null || snapshot == null) return@addSnapshotListener
 
-                    // ✅ DEBUG: confirma que llegan eventos y qué trae el estado
                     Log.d("NOTI", "docs=${snapshot.documents.size} changes=${snapshot.documentChanges.size}")
                     snapshot.documentChanges.forEach { c ->
                         Log.d("NOTI", "type=${c.type} id=${c.document.id} estado=${c.document.getString("estado")}")
                     }
 
-                    // 1) Primera carga: sincroniza estados, NO notifica
                     if (primeraCarga) {
                         snapshot.documents.forEach { doc ->
                             val estado = parseEstadoPedido(doc.getString("estado"))
-                            if (estado != null) {
-                                ultimoEstadoPorPedido[doc.id] = estado
-                            }
+                            if (estado != null) ultimoEstadoPorPedido[doc.id] = estado
                         }
                         primeraCarga = false
                         return@addSnapshotListener
                     }
 
-                    // 2) Cambios: notifica solo si se modificó/agregó y cambió el estado
                     snapshot.documentChanges.forEach { change ->
-                        // ✅ CAMBIO: aceptar MODIFIED o ADDED
                         if (
                             change.type != DocumentChange.Type.MODIFIED &&
                             change.type != DocumentChange.Type.ADDED
@@ -130,21 +110,14 @@ fun PerfilClienteScreen(
                         if (anterior != null && anterior != nuevoEstado) {
                             pedidoNotifier.mostrarNotificacionPedido(nuevoEstado)
                         }
-
-                        // Si es ADDED (nuevo pedido) y quieres notificar SOLO cambios,
-                        // igual guardamos el estado para comparar en futuras modificaciones:
                         ultimoEstadoPorPedido[pedidoId] = nuevoEstado
                     }
                 }
 
-            onDispose {
-                reg.remove()
-            }
+            onDispose { reg.remove() }
         }
     }
-    // ============================
 
-    // region Load profile photo from Firestore
     LaunchedEffect(userState?.correo) {
         val correo = userState?.correo ?: return@LaunchedEffect
         FirebaseFirestore.getInstance()
@@ -156,9 +129,7 @@ fun PerfilClienteScreen(
                 fotoUrl = query.documents.firstOrNull()?.getString("fotoUrl")
             }
     }
-    // endregion
 
-    // region Infinite scroll: load more products
     LaunchedEffect(lazyListState) {
         snapshotFlow { lazyListState.layoutInfo.visibleItemsInfo }
             .collectLatest { visibleItems ->
@@ -171,7 +142,6 @@ fun PerfilClienteScreen(
                 }
             }
     }
-    // endregion
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -181,16 +151,23 @@ fun PerfilClienteScreen(
             modifier = Modifier.fillMaxSize()
         )
 
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.20f))
+        )
+
         Column(modifier = Modifier.fillMaxSize()) {
 
-            // region Header Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 80.dp)
                     .padding(horizontal = 16.dp),
-                elevation = CardDefaults.cardElevation(4.dp),
-                colors = CardDefaults.cardColors(containerColor = CardBackgroundColor)
+                elevation = CardDefaults.cardElevation(8.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = CardBackgroundColor),
+                border = BorderStroke(1.dp, CardBorderColor)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
 
@@ -207,7 +184,7 @@ fun PerfilClienteScreen(
                                     modifier = Modifier
                                         .size(46.dp)
                                         .clip(CircleShape)
-                                        .background(Color.LightGray)
+                                        .background(Color.White.copy(alpha = 0.15f))
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
                             }
@@ -216,12 +193,12 @@ fun PerfilClienteScreen(
                                 Text(
                                     text = "Bienvenido ${userState?.nombre ?: nombre}",
                                     style = MaterialTheme.typography.headlineSmall,
-                                    color = PrimaryColor
+                                    color = Color.White
                                 )
                                 Text(
                                     text = "Rol: Cliente",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.Gray
+                                    color = Color.White.copy(alpha = 0.75f)
                                 )
                             }
                         }
@@ -237,7 +214,7 @@ fun PerfilClienteScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -249,15 +226,15 @@ fun PerfilClienteScreen(
                             badge = {
                                 val cantidadTotal = carrito.sumOf { it.cantidad }
                                 if (cantidadTotal > 0) {
-                                    Badge(containerColor = Color(0xFFD32F2F)) {
-                                        Text(cantidadTotal.toString())
-                                    }
+                                    Badge(containerColor = Burdeo) { Text(cantidadTotal.toString()) }
                                 }
                             }
                         ) {
                             FilledTonalButton(
                                 onClick = onVerCarrito,
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(SmallButtonHeight),
                                 colors = ButtonDefaults.filledTonalButtonColors(
                                     containerColor = PrimaryColor,
                                     contentColor = Color.White
@@ -265,37 +242,48 @@ fun PerfilClienteScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.ShoppingCart,
-                                    contentDescription = "Carrito"
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
                                 )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Ver Carrito")
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Ver Carrito", style = MaterialTheme.typography.bodySmall, maxLines = 1)
                             }
                         }
 
                         FilledTonalButton(
                             onClick = onAgregarResena,
                             modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth(),
+                                .weight(1.2f)
+                                .height(SmallButtonHeight),
                             colors = ButtonDefaults.filledTonalButtonColors(
                                 containerColor = SecondaryButtonColor,
                                 contentColor = Color.White
-                            )
+                            ),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Add,
-                                contentDescription = "Agregar reseña"
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Agregar reseña")
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Agregar reseña",
+                                maxLines = 1,
+                                softWrap = false,
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
+                    // ✅ MIS PEDIDOS VA FUERA DEL ROW
                     FilledTonalButton(
                         onClick = onVerPedidos,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(SmallButtonHeight),
                         colors = ButtonDefaults.filledTonalButtonColors(
                             containerColor = PrimaryColor,
                             contentColor = Color.White
@@ -303,19 +291,20 @@ fun PerfilClienteScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.History,
-                            contentDescription = "Mis pedidos"
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Mis pedidos")
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Mis pedidos", style = MaterialTheme.typography.bodySmall, maxLines = 1)
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
                         text = "Consulta el estado de tus pedidos en 'Mis pedidos'",
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Gray
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White.copy(alpha = 0.75f)
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -325,35 +314,28 @@ fun PerfilClienteScreen(
                         horizontalArrangement = Arrangement.End
                     ) {
                         TextButton(onClick = onLogout) {
-                            Text("Cerrar Sesión", color = Color(0xFFD32F2F))
+                            Text("Cerrar Sesión", color = Burdeo)
                         }
                     }
                 }
             }
-            // endregion
 
             Text(
                 text = "Catálogo de Productos",
                 style = MaterialTheme.typography.headlineMedium,
                 color = Color.White,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp)
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp)
             )
 
             when {
                 cargando && productos.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = PrimaryColor)
                     }
                 }
 
                 productos.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("No hay productos disponibles", color = Color.White)
                     }
                 }
@@ -363,18 +345,13 @@ fun PerfilClienteScreen(
                         state = lazyListState,
                         modifier = Modifier.weight(1f),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         items(items = productos) { producto ->
                             ItemProducto(
                                 producto = producto,
-                                cantidadEnCarrito = carrito.find { it.producto.id == producto.id }?.cantidad
-                                    ?: 0,
-                                onAgregar = {
-                                    if (producto.stock > 0) {
-                                        viewModel.agregarAlCarrito(producto)
-                                    }
-                                },
+                                cantidadEnCarrito = carrito.find { it.producto.id == producto.id }?.cantidad ?: 0,
+                                onAgregar = { if (producto.stock > 0) viewModel.agregarAlCarrito(producto) },
                                 onRemover = { viewModel.removerDelCarrito(producto) }
                             )
                         }
@@ -398,7 +375,6 @@ fun PerfilClienteScreen(
     }
 }
 
-// ✅ Conversión más tolerante (EN CAMINO o EN_CAMINO)
 private fun parseEstadoPedido(valor: String?): EstadoPedido? {
     val v = valor?.trim()?.uppercase() ?: return null
     return when {

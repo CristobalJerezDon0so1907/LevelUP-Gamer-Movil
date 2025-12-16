@@ -25,7 +25,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.levelup_gamer.R
 import com.example.levelup_gamer.viewmodel.LoginViewModel
@@ -39,13 +38,38 @@ private val ManagementColor2 = Color(0xFF4C427B)
 private val CardBackgroundColor = ManagementColor1
 private val BackgroundColor = Color(0xFF1F1B3B)
 
+private const val PREF_FOTO_CLIENTE = "foto_cliente_prefs"
+
+private fun fotoKeyPorCorreo(correo: String): String {
+    // clave estable por correo
+    return "foto_uri_${correo.trim().lowercase()}"
+}
+
+private fun guardarFotoLocalCliente(context: Context, correo: String, uri: String) {
+    context.getSharedPreferences(PREF_FOTO_CLIENTE, Context.MODE_PRIVATE)
+        .edit()
+        .putString(fotoKeyPorCorreo(correo), uri)
+        .apply()
+}
+
+private fun obtenerFotoLocalCliente(context: Context, correo: String): String? {
+    return context.getSharedPreferences(PREF_FOTO_CLIENTE, Context.MODE_PRIVATE)
+        .getString(fotoKeyPorCorreo(correo), null)
+}
+
+private fun borrarFotoLocalCliente(context: Context, correo: String) {
+    context.getSharedPreferences(PREF_FOTO_CLIENTE, Context.MODE_PRIVATE)
+        .edit()
+        .remove(fotoKeyPorCorreo(correo))
+        .apply()
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GestorPerfilScreen(
     loginViewModel: LoginViewModel,
     onBack: () -> Unit = {}
-)
- {
+) {
     val context = LocalContext.current
     val userState by loginViewModel.user.collectAsState()
 
@@ -58,15 +82,20 @@ fun GestorPerfilScreen(
     var fotoUriString by remember { mutableStateOf<String?>(null) }
     var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
 
-    // ✅ SINCRONIZA el TextField cuando llega el userState (fix principal)
     LaunchedEffect(nombreActual) {
         nombreEditable = nombreActual
     }
 
-    // Cargar foto desde Firestore por correo
+    //Cargar foto
     LaunchedEffect(correoUsuario) {
         if (correoUsuario.isNullOrBlank()) return@LaunchedEffect
 
+        //Local
+        obtenerFotoLocalCliente(context, correoUsuario)?.let { local ->
+            fotoUriString = local
+        }
+
+        //Firestore
         FirebaseFirestore.getInstance()
             .collection("usuario")
             .whereEqualTo("correo", correoUsuario)
@@ -74,7 +103,10 @@ fun GestorPerfilScreen(
             .get()
             .addOnSuccessListener { query ->
                 val url = query.documents.firstOrNull()?.getString("fotoUrl")
-                if (!url.isNullOrBlank()) fotoUriString = url
+                if (!url.isNullOrBlank()) {
+                    fotoUriString = url
+                    guardarFotoLocalCliente(context, correoUsuario, url)
+                }
             }
             .addOnFailureListener {
                 Toast.makeText(context, "No se pudo cargar la foto", Toast.LENGTH_SHORT).show()
@@ -91,7 +123,9 @@ fun GestorPerfilScreen(
             return@rememberLauncherForActivityResult
         }
 
+        // ✅ Mostrar altiro + guardar local
         fotoUriString = uri.toString()
+        guardarFotoLocalCliente(context, correoUsuario, uri.toString())
 
         subirFotoCliente(
             uri = uri,
@@ -99,6 +133,7 @@ fun GestorPerfilScreen(
         ) { url ->
             if (!url.isNullOrBlank()) {
                 fotoUriString = url
+                guardarFotoLocalCliente(context, correoUsuario, url) // ✅ guardar URL final
             } else {
                 Toast.makeText(context, "Error al subir foto", Toast.LENGTH_SHORT).show()
             }
@@ -116,7 +151,10 @@ fun GestorPerfilScreen(
         }
 
         val uri = tempCameraUri ?: return@rememberLauncherForActivityResult
+
+        // ✅ Mostrar altiro + guardar local
         fotoUriString = uri.toString()
+        guardarFotoLocalCliente(context, correoUsuario, uri.toString())
 
         subirFotoCliente(
             uri = uri,
@@ -124,6 +162,7 @@ fun GestorPerfilScreen(
         ) { url ->
             if (!url.isNullOrBlank()) {
                 fotoUriString = url
+                guardarFotoLocalCliente(context, correoUsuario, url) // ✅ guardar URL final
             } else {
                 Toast.makeText(context, "Error al subir foto", Toast.LENGTH_SHORT).show()
             }
@@ -214,7 +253,8 @@ fun GestorPerfilScreen(
                                 modifier = Modifier
                                     .size(140.dp)
                                     .clip(CircleShape)
-                                    .background(Color.White)
+                                    .background(Color.White),
+                                contentScale = ContentScale.Crop
                             )
                         } else {
                             Surface(
@@ -318,8 +358,7 @@ fun GestorPerfilScreen(
                                 Toast.makeText(context, "Error al guardar los cambios", Toast.LENGTH_SHORT).show()
                             }
                         }
-                    }
-                    ,
+                    },
                     enabled = !guardandoNombre && nombreEditable.isNotBlank() && hayCambios,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)

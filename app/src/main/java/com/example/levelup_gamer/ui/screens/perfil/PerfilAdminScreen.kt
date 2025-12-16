@@ -42,6 +42,28 @@ private val ManagementColor2 = Color(0xFF4C427B)
 private val ManagementColor3 = Color(0xFF3B3068)
 private val CardBackgroundColor = Color(0xFF5E548E)
 
+private const val PREF_FOTO_ADMIN = "foto_admin_prefs"
+private const val KEY_FOTO_URI = "foto_uri"
+
+private fun guardarFotoLocal(context: Context, uri: String) {
+    context.getSharedPreferences(PREF_FOTO_ADMIN, Context.MODE_PRIVATE)
+        .edit()
+        .putString(KEY_FOTO_URI, uri)
+        .apply()
+}
+
+private fun obtenerFotoLocal(context: Context): String? {
+    return context.getSharedPreferences(PREF_FOTO_ADMIN, Context.MODE_PRIVATE)
+        .getString(KEY_FOTO_URI, null)
+}
+
+private fun borrarFotoLocal(context: Context) {
+    context.getSharedPreferences(PREF_FOTO_ADMIN, Context.MODE_PRIVATE)
+        .edit()
+        .remove(KEY_FOTO_URI)
+        .apply()
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilAdminScreen(
@@ -66,15 +88,24 @@ fun PerfilAdminScreen(
     var fotoUriString by remember { mutableStateOf<String?>(null) }
     var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
 
-    // Cargar foto actual desde Firestore
+    // ✅ Cargar foto: primero local (instantáneo), luego Firestore (sincroniza)
     LaunchedEffect(Unit) {
+        // 1) Local
+        obtenerFotoLocal(context)?.let { local ->
+            fotoUriString = local
+        }
+
+        // 2) Firestore
         FirebaseFirestore.getInstance()
             .collection("admin")
             .document("perfil")
             .get()
             .addOnSuccessListener { doc ->
                 val url = doc.getString("fotoUrl")
-                if (!url.isNullOrBlank()) fotoUriString = url
+                if (!url.isNullOrBlank()) {
+                    fotoUriString = url
+                    guardarFotoLocal(context, url)
+                }
             }
     }
 
@@ -82,10 +113,18 @@ fun PerfilAdminScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let {
+            // ✅ Mostrar altiro + guardar local
             fotoUriString = it.toString()
+            guardarFotoLocal(context, it.toString())
+
+            // ✅ Subir a Firebase, y si devuelve URL, actualizar y guardar
             subirFotoAdmin(it) { url ->
-                if (!url.isNullOrBlank()) fotoUriString = url
-                else Toast.makeText(context, "No se pudo subir la foto", Toast.LENGTH_SHORT).show()
+                if (!url.isNullOrBlank()) {
+                    fotoUriString = url
+                    guardarFotoLocal(context, url)
+                } else {
+                    Toast.makeText(context, "No se pudo subir la foto", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -95,10 +134,18 @@ fun PerfilAdminScreen(
     ) { success ->
         if (success) {
             tempCameraUri?.let { uri ->
+                // ✅ Mostrar altiro + guardar local
                 fotoUriString = uri.toString()
+                guardarFotoLocal(context, uri.toString())
+
+                // ✅ Subir a Firebase, y si devuelve URL, actualizar y guardar
                 subirFotoAdmin(uri) { url ->
-                    if (!url.isNullOrBlank()) fotoUriString = url
-                    else Toast.makeText(context, "No se pudo subir la foto", Toast.LENGTH_SHORT).show()
+                    if (!url.isNullOrBlank()) {
+                        fotoUriString = url
+                        guardarFotoLocal(context, url)
+                    } else {
+                        Toast.makeText(context, "No se pudo subir la foto", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -117,8 +164,10 @@ fun PerfilAdminScreen(
     }
 
     fun abrirCamaraConPermiso() {
-        val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
-                PackageManager.PERMISSION_GRANTED
+        val granted = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
 
         if (granted) {
             val uri = crearFotoUri(context)
@@ -143,7 +192,13 @@ fun PerfilAdminScreen(
         TopAppBar(
             title = { Text("Panel administrador", color = Color.White) },
             actions = {
-                TextButton(onClick = onLogout) {
+                TextButton(
+                    onClick = {
+                        // ✅ opcional: borrar cache local al cerrar sesión
+                        // borrarFotoLocal(context)
+                        onLogout()
+                    }
+                ) {
                     Text("Cerrar sesión", color = Color.White)
                 }
             },
@@ -181,7 +236,8 @@ fun PerfilAdminScreen(
                             modifier = Modifier
                                 .size(140.dp)
                                 .clip(CircleShape)
-                                .background(Color.White)
+                                .background(Color.White),
+                            contentScale = ContentScale.Crop
                         )
                     } else {
                         Surface(
@@ -297,7 +353,9 @@ fun PerfilAdminScreen(
 
             FilledTonalButton(
                 onClick = onGestionProductos,
-                modifier = Modifier.fillMaxWidth().height(48.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = ManagementColor1,
                     contentColor = Color.White
@@ -312,7 +370,9 @@ fun PerfilAdminScreen(
 
             FilledTonalButton(
                 onClick = onGestionUsuarios,
-                modifier = Modifier.fillMaxWidth().height(48.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = ManagementColor2,
                     contentColor = Color.White
@@ -327,7 +387,9 @@ fun PerfilAdminScreen(
 
             FilledTonalButton(
                 onClick = onGestionPedidos,
-                modifier = Modifier.fillMaxWidth().height(48.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = ManagementColor3,
                     contentColor = Color.White
