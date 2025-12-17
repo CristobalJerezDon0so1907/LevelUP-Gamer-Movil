@@ -72,14 +72,21 @@ fun PerfilClienteScreen(
     val pedidoNotifier = remember { PedidoNotificationHelper(context) }
 
     val correoCliente = userState?.correo
+
     val ultimoEstadoPorPedido = remember(correoCliente) { mutableStateMapOf<String, EstadoPedido>() }
     var primeraCarga by remember(correoCliente) { mutableStateOf(true) }
+
+    LaunchedEffect(correoCliente) {
+
+        ultimaLimpieza(ultimoEstadoPorPedido)
+        primeraCarga = true
+    }
 
     if (!correoCliente.isNullOrBlank()) {
         DisposableEffect(correoCliente) {
             val reg = FirebaseFirestore.getInstance()
                 .collection("pedidos")
-                .whereEqualTo("correoCliente", correoCliente)
+                .whereEqualTo("correoUsuario", correoCliente)
                 .addSnapshotListener { snapshot, error ->
                     if (error != null || snapshot == null) return@addSnapshotListener
 
@@ -110,6 +117,7 @@ fun PerfilClienteScreen(
                         if (anterior != null && anterior != nuevoEstado) {
                             pedidoNotifier.mostrarNotificacionPedido(nuevoEstado)
                         }
+
                         ultimoEstadoPorPedido[pedidoId] = nuevoEstado
                     }
                 }
@@ -118,6 +126,7 @@ fun PerfilClienteScreen(
         }
     }
 
+    // Cargar foto
     LaunchedEffect(userState?.correo) {
         val correo = userState?.correo ?: return@LaunchedEffect
         FirebaseFirestore.getInstance()
@@ -130,6 +139,7 @@ fun PerfilClienteScreen(
             }
     }
 
+    // Infinite scroll
     LaunchedEffect(lazyListState) {
         snapshotFlow { lazyListState.layoutInfo.visibleItemsInfo }
             .collectLatest { visibleItems ->
@@ -278,7 +288,6 @@ fun PerfilClienteScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // ✅ MIS PEDIDOS VA FUERA DEL ROW
                     FilledTonalButton(
                         onClick = onVerPedidos,
                         modifier = Modifier
@@ -376,11 +385,21 @@ fun PerfilClienteScreen(
 }
 
 private fun parseEstadoPedido(valor: String?): EstadoPedido? {
-    val v = valor?.trim()?.uppercase() ?: return null
+    val v = valor
+        ?.trim()
+        ?.replace("_", " ")
+        ?.uppercase()
+        ?: return null
+
     return when {
         v == "PENDIENTE" || v == "PENDIENTE." -> EstadoPedido.PENDIENTE
-        v == "EN_CAMINO" || v == "EN CAMINO" -> EstadoPedido.EN_CAMINO
+        v == "EN CAMINO" -> EstadoPedido.EN_CAMINO
         v == "ENTREGADO" || v == "ENTREGADO." -> EstadoPedido.ENTREGADO
         else -> null
     }
+}
+
+
+private fun ultimaLimpieza(map: MutableMap<String, EstadoPedido>) {
+    map.clear()
 }
